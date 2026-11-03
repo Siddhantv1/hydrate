@@ -40,7 +40,7 @@ fun canRemind(s: HydrateState, now: ZonedDateTime): Boolean {
 fun rollover(s: HydrateState, today: LocalDate): HydrateState {
     if (s.date == today.toString()) return s
     val missed = s.onboarded && s.date != "" &&
-        (s.goalMetDate != s.date || today > LocalDate.parse(s.date).plusDays(1))
+        ((s.goalMetDate != s.date && s.date != s.firstDate) || today > LocalDate.parse(s.date).plusDays(1))
     return s.copy(
         glassesToday = 0,
         outstanding = false,
@@ -107,7 +107,7 @@ fun completeOnboarding(
     s.copy(
         onboarded = true, age = age, gender = gender, unit = unit, autoGoal = autoGoal,
         goalGlasses = goalGlasses, startMinute = startMinute, endMinute = endMinute,
-        date = now.toLocalDate().toString(), glassesToday = 0,
+        date = now.toLocalDate().toString(), firstDate = now.toLocalDate().toString(), glassesToday = 0,
     ),
     now, null,
 )

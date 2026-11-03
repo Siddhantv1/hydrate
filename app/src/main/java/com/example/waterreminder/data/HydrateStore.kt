@@ -22,7 +22,7 @@ private val Context.hydrateDataStore by preferencesDataStore(name = "hydrate")
 
 class HydrateStore(
     private val dataStore: DataStore<Preferences>,
-    private val clock: Clock = Clock.systemDefaultZone(),
+    private val clock: () -> Clock = { Clock.systemDefaultZone() },
 ) {
     private object K {
         val onboarded = booleanPreferencesKey("onboarded")
@@ -42,6 +42,7 @@ class HydrateStore(
         val outstanding = booleanPreferencesKey("outstanding")
         val doubleNext = booleanPreferencesKey("doubleNext")
         val showMissedGoal = booleanPreferencesKey("showMissedGoal")
+        val firstDate = stringPreferencesKey("firstDate")
     }
 
     private fun read(p: Preferences): HydrateState {
@@ -64,6 +65,7 @@ class HydrateStore(
             outstanding = p[K.outstanding] ?: d.outstanding,
             doubleNext = p[K.doubleNext] ?: d.doubleNext,
             showMissedGoal = p[K.showMissedGoal] ?: d.showMissedGoal,
+            firstDate = p[K.firstDate] ?: d.firstDate,
         )
     }
 
@@ -85,17 +87,18 @@ class HydrateStore(
         p[K.outstanding] = s.outstanding
         p[K.doubleNext] = s.doubleNext
         p[K.showMissedGoal] = s.showMissedGoal
+        p[K.firstDate] = s.firstDate
     }
 
     /** Persisted state passed through rollover(today); does not write. */
     val state: Flow<HydrateState> =
-        dataStore.data.map { rollover(read(it), LocalDate.now(clock)) }
+        dataStore.data.map { rollover(read(it), LocalDate.now(clock())) }
 
     /** Returns (rolledBefore, after); persists `after` atomically. */
     suspend fun update(transform: (HydrateState) -> HydrateState): Pair<HydrateState, HydrateState> {
         var result: Pair<HydrateState, HydrateState>? = null
         dataStore.edit { p ->
-            val before = rollover(read(p), LocalDate.now(clock))
+            val before = rollover(read(p), LocalDate.now(clock()))
             val after = transform(before)
             write(p, after)
             result = before to after

@@ -57,20 +57,23 @@ internal fun InkButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     filled: Boolean = false,
+    touch: Dp = size,
     glyph: DrawScope.(Color) -> Unit,
 ) {
     val ink = if (enabled) Ink.Paper else Ink.Muted
     Box(
-        modifier.size(size)
+        modifier.size(touch)
             .semantics { contentDescription = description }
-            .clickable(enabled = enabled, role = Role.Button, interactionSource = null, indication = null, onClick = onClick)
-            .drawBehind {
+            .clickable(enabled = enabled, role = Role.Button, interactionSource = null, indication = null, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.size(size).drawBehind {
                 val pts = ring(center, this.size.minDimension / 2f - 2.dp.toPx(), fromDeg = -100f + seed * 7, n = 9)
                 if (filled && enabled) drawPath(sketchPath(pts, seed, closed = true), ink)
                 sketchStroke(pts, seed, ink, closed = true)
                 glyph(if (filled && enabled) Ink.Bg else ink)
-            },
-    )
+            })
+    }
 }
 
 /** Undo arrow (the usual undo icon): a chevron pointing left on top, its shaft hooking round on the right and back. */

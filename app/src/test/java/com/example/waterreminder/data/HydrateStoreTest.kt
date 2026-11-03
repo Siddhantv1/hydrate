@@ -43,15 +43,15 @@ class HydrateStoreTest {
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         val ds = dataStore(scope)
         val full = HydrateState(true, 31, Gender.FEMALE, VolumeUnit.OZ, false, 11, 420, 1260, 4, "2026-11-03",
-            6, "2026-11-02", "2026-11-03", 1793700000000L, true, true, true)
-        HydrateStore(ds, clockOn(3)).update { full }
-        assertEquals(full, HydrateStore(ds, clockOn(3)).state.first())
+            6, "2026-11-02", "2026-11-03", 1793700000000L, true, true, true, "2026-10-30")
+        HydrateStore(ds, { clockOn(3) }).update { full }
+        assertEquals(full, HydrateStore(ds, { clockOn(3) }).state.first())
         scope.cancel()
     }
 
     @Test fun updateAppliesRolloverFirst() = runBlocking {
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-        val s = HydrateStore(dataStore(scope), clockOn(4))
+        val s = HydrateStore(dataStore(scope), { clockOn(4) })
         s.update { HydrateState(onboarded = true, glassesToday = 5, date = "2026-11-03", goalMetDate = "2026-11-03", streak = 2) }
         val (before, after) = s.update { it }
         assertEquals("2026-11-04", before.date); assertEquals(0, after.glassesToday); assertEquals(2, after.streak)

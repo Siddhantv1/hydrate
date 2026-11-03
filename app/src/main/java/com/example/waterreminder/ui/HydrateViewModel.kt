@@ -11,10 +11,12 @@ import com.example.waterreminder.domain.*
 import com.example.waterreminder.reminder.ReminderNotification
 import com.example.waterreminder.reminder.ReminderScheduler
 import java.time.ZonedDateTime
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class HydrateViewModel(app: Application) : AndroidViewModel(app) {
     private val store = HydrateStore.get(app)
@@ -50,11 +52,14 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun apply(cancelNotification: Boolean = false, rule: (HydrateState, ZonedDateTime) -> HydrateState):
         Pair<HydrateState, HydrateState> {
-        val now = ZonedDateTime.now()
-        val r = store.update { rule(it, now) }
-        ReminderScheduler.arm(getApplication(), r.second)
-        if (cancelNotification) ReminderNotification.cancel(getApplication())
-        return r
+        // NonCancellable: finish() must not land between the store write and the alarm re-arm.
+        return withContext(NonCancellable) {
+            val now = ZonedDateTime.now()
+            val r = store.update { rule(it, now) }
+            ReminderScheduler.arm(getApplication(), r.second)
+            if (cancelNotification) ReminderNotification.cancel(getApplication())
+            r
+        }
     }
 
     private fun goalJustMet(before: HydrateState, after: HydrateState): Boolean {
@@ -66,7 +71,7 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val (_, after) = apply { s, now -> planNext(s, now, null) }
             _state.value = after
-            if (force || _screen.value == null || _screen.value == Screen.Home) _screen.value = startScreen(after)
+            if (force || _screen.value.let { it == null || !keepsPlaceOnResume(it) }) _screen.value = startScreen(after)
         }
     }
 
@@ -86,7 +91,7 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             val (b, a) = apply(true) { s, now -> addGlasses(s, 1, now) }
             log(1, b, a)
-            _screen.value = if (goalJustMet(b, a)) Screen.AllDone else Screen.Home
+            if (goalJustMet(b, a)) _screen.value = Screen.AllDone // else stay on Home; AllDone from an earlier tap wins
         }
     }
 

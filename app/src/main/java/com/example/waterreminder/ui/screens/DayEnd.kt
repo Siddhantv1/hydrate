@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -37,8 +38,12 @@ private fun DayEnd(title: String, lit: Boolean, count: Int, onOk: () -> Unit, ti
         Text(title, Modifier.padding(horizontal = 34.dp), style = display(titleSize.sp), textAlign = TextAlign.Center)
         SketchFlame(lit, Modifier.size(36.dp))
         Text("$count", style = display(40.sp).let { if (lit) it else it.copy(color = Ink.Muted) })
-        Spacer(Modifier.height(4.dp))
-        InkButton("Done", 36.dp, 5, onOk) { checkGlyph(it) }
+        // 36dp drawing in a 48dp touch target; reported height is 40 dp (the old 4 spacer + 36 button) so the column's fit is unchanged.
+        val trim = Modifier.layout { m, c ->
+            val p = m.measure(c)
+            layout(p.width, p.height - 8.dp.roundToPx()) { p.place(0, -4.dp.roundToPx()) }
+        }
+        InkButton("Done", 36.dp, 5, onOk, trim, touch = 48.dp) { checkGlyph(it) }
     }
 }
 

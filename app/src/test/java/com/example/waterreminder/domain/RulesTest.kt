@@ -143,6 +143,15 @@ class RulesTest {
         assertFalse(s.outstanding); assertFalse(s.doubleNext)
     }
 
+    @Test fun onboardingDayIsNotMissed() {
+        val on = completeOnboarding(HydrateState(), 25, Gender.MALE, VolumeUnit.ML, true, 8, 480, 1320, at(21, 0, 3))
+        val next = rollover(on, d3.plusDays(1))
+        assertFalse(next.showMissedGoal); assertEquals(0, next.streak)
+        // a real missed day after the first day still resets
+        val missed = rollover(rollover(on, d3.plusDays(1)).copy(streak = 2), d3.plusDays(2))
+        assertEquals(0, missed.streak); assertTrue(missed.showMissedGoal)
+    }
+
     @Test fun rolloverAfterGapDayResetsStreak() {
         val s = rollover(base.copy(glassesToday = 8, streak = 5, goalMetDate = "2026-11-03"), d3.plusDays(2))
         assertEquals(0, s.streak); assertTrue(s.showMissedGoal)

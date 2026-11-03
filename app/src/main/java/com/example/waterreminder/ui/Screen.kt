@@ -13,6 +13,12 @@ fun startScreen(s: HydrateState): Screen = when {
     else -> Screen.Home
 }
 
+/** Screens that keep their place when the app resumes: in-progress input must not be lost. */
+fun keepsPlaceOnResume(screen: Screen): Boolean = when (screen) {
+    Screen.Age, Screen.Gender, Screen.Goal, Screen.Hours, Screen.AllSet, Screen.EditGoal, Screen.EditHours -> true
+    else -> false
+}
+
 /** null = leave the app. */
 fun backOf(screen: Screen): Screen? = when (screen) {
     Screen.Gender -> Screen.Age

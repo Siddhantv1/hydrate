@@ -22,4 +22,5 @@ data class HydrateState(
     val outstanding: Boolean = false,
     val doubleNext: Boolean = false,
     val showMissedGoal: Boolean = false,
+    val firstDate: String = "",      // onboarding day; never counts as missed
 )
