@@ -27,9 +27,9 @@ fun HydrateApp(vm: HydrateViewModel) {
     val current = screen ?: return Box(Modifier.fillMaxSize().background(Color.Black))
     BackHandler { if (!vm.back()) activity?.finish() }
     BasicSwipeToDismissBox(
-        onDismissed = { vm.back() },
+        onDismissed = { if (!vm.back()) activity?.finish() },
         state = rememberSwipeToDismissBoxState(),
-        userSwipeEnabled = current != Screen.DrinkUp && backOf(current) != null,
+        userSwipeEnabled = current != Screen.DrinkUp,
     ) { isBackground ->
         Box(Modifier.fillMaxSize().background(Color.Black)) {
             if (!isBackground) Body(vm, current)
