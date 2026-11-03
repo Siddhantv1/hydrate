@@ -18,6 +18,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,8 +56,7 @@ fun DrinkUpScreen(state: HydrateState, onSkip: () -> Unit, onDrank: () -> Unit) 
             sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(r, r * 0.08f)), 91, Ink.Skip)
         }
         ArcSwipeButton(ArcSide.RIGHT, Ink.Done, once(onDrank)) {
-            val r = size.minDimension * 0.2f
-            sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(-r * 0.25f, r * 0.7f), center + Offset(r, -r * 0.65f)), 92, Ink.Done)
+            checkGlyph(Ink.Done)
         }
     }
 }
@@ -86,4 +86,10 @@ fun SkipNoteScreen(onOk: () -> Unit) {
         Spacer(Modifier.height(14.dp))
         SketchPill("OK", onOk)
     }
+}
+
+/** The hand-drawn ✓ shared by the drank button and the end-of-day buttons. */
+internal fun DrawScope.checkGlyph(color: androidx.compose.ui.graphics.Color) {
+    val r = size.minDimension * 0.2f
+    sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(-r * 0.25f, r * 0.7f), center + Offset(r, -r * 0.65f)), 92, color)
 }

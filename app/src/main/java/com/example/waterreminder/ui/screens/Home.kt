@@ -49,7 +49,7 @@ import kotlinx.coroutines.launch
 
 /** Round hand-drawn button: [filled] paints the disc in ink (the sketch's solid right button). */
 @Composable
-private fun InkButton(
+internal fun InkButton(
     description: String,
     size: Dp,
     seed: Int,
