@@ -26,6 +26,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.waterreminder.ui.theme.Ink
@@ -51,12 +56,14 @@ fun arcProgress(angleDeg: Float, side: ArcSide): Float {
  * Alarm-style button: a knob in a bottom corner that is dragged up a curved track along the screen edge.
  * Let go past the tick ([SWIPE_THRESHOLD]) and it runs to the end and fires [onTrigger]; before it, it springs back.
  * Fills the parent (the track needs the whole circle); only the knob takes touches. No haptics.
+ * For TalkBack the knob is a button named [label] whose click fires it straight away.
  */
 @Composable
-fun ArcSwipeButton(side: ArcSide, color: Color, onTrigger: () -> Unit, glyph: DrawScope.() -> Unit) {
+fun ArcSwipeButton(side: ArcSide, color: Color, label: String, onTrigger: () -> Unit, glyph: DrawScope.() -> Unit) {
     val progress = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
     val trigger by rememberUpdatedState(onTrigger)
+    suspend fun fire() { progress.animateTo(1f, tween(120)); trigger() }
     BoxWithConstraints(Modifier.fillMaxSize()) {
         val knobPx = with(LocalDensity.current) { KNOB.toPx() }
         val c = Offset(constraints.maxWidth / 2f, constraints.maxHeight / 2f)
@@ -87,12 +94,16 @@ fun ArcSwipeButton(side: ArcSide, color: Color, onTrigger: () -> Unit, glyph: Dr
             Modifier
                 .offset { at(progress.value).let { IntOffset((it.x - knobPx / 2).roundToInt(), (it.y - knobPx / 2).roundToInt()) } }
                 .size(KNOB)
+                .semantics {
+                    contentDescription = label
+                    role = Role.Button
+                    onClick(label) { scope.launch { fire() }; true }
+                }
                 .pointerInput(side, r) {
                     var finger = Offset.Zero
                     fun release() = scope.launch {
                         if (progress.value >= SWIPE_THRESHOLD) {
-                            progress.animateTo(1f, tween(120))
-                            trigger()
+                            fire()
                         } else {
                             progress.animateTo(0f, spring(dampingRatio = 0.5f, visibilityThreshold = 0.002f))
                         }

@@ -51,11 +51,11 @@ fun DrinkUpScreen(state: HydrateState, onSkip: () -> Unit, onDrank: () -> Unit) 
             Text("Drink up!", style = display(30.sp))
             Text(frozen ?: line, style = body(15.sp).copy(color = Ink.Paper.copy(alpha = 0.72f)))
         }
-        ArcSwipeButton(ArcSide.LEFT, Ink.Skip, once(onSkip)) {
+        ArcSwipeButton(ArcSide.LEFT, Ink.Skip, "Skip", once(onSkip)) {
             val r = size.minDimension * 0.2f
             sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(r, r * 0.08f)), 91, Ink.Skip)
         }
-        ArcSwipeButton(ArcSide.RIGHT, Ink.Done, once(onDrank)) {
+        ArcSwipeButton(ArcSide.RIGHT, Ink.Done, "Drank", once(onDrank)) {
             checkGlyph(Ink.Done)
         }
     }

@@ -73,37 +73,37 @@ internal fun InkButton(
     )
 }
 
-/** Undo hook: an arc over the top from lower right to the left, ending in a downward chevron. */
+/** Undo arrow (the usual undo icon): a chevron pointing left on top, its shaft hooking round on the right and back. */
 private fun DrawScope.undoArrow(color: Color) {
-    val r = size.minDimension * 0.27f
-    val c = center + Offset(size.width * 0.04f, size.height * 0.08f)
-    sketchStroke(ring(c, r, fromDeg = 180f, sweepDeg = 200f, n = 6), 61, color)
-    val tip = c + Offset(-r, r * 0.2f)
-    val w = r * 0.42f
-    sketchStroke(listOf(tip + Offset(-w, -w), tip, tip + Offset(w, -w * 1.1f)), 62, color)
+    val r = size.minDimension * 0.3f
+    fun q(x: Float, y: Float) = center + Offset((x + 0.12f) * r, (y + 0.08f) * r)
+    val tip = q(-0.85f, -0.35f)
+    sketchStroke(listOf(q(-0.4f, -0.8f), tip, q(-0.4f, 0.1f)), 61, color)
+    val hookC = q(0.15f, 0.1f)
+    sketchStroke(listOf(tip) + ring(hookC, 0.45f * r, fromDeg = -90f, sweepDeg = 180f, n = 5) + q(-0.3f, 0.55f), 62, color)
 }
 
 @Composable
 fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMenu: () -> Unit) {
     val glasses = state.glassesToday
     // Entering Home never replays a rise (Hell yeah! shows it); while Home is up, + and undo animate the glass.
-    Column(Modifier.fillMaxSize().padding(top = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+    Column(Modifier.fillMaxSize().padding(top = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.Center) {
-            WaterGlass(glasses, state.goalGlasses, Modifier.size(96.dp, 114.dp))
-            InkButton("Menu", 36.dp, 1, onMenu, Modifier.offset(x = (-64).dp)) { ink ->
+            // The drawn glass is 68% of the box: ~87dp, ~41% of the 212dp screen. A taller box pushes the streak row off the bottom.
+            WaterGlass(glasses, state.goalGlasses, Modifier.size(128.dp, 132.dp))
+            InkButton("Menu", 36.dp, 1, onMenu, Modifier.offset(x = (-68).dp)) { ink ->
                 listOf(-1, 0, 1).forEach { k ->
                     drawCircle(ink, 2.2.dp.toPx(), center + Offset(k * 7.dp.toPx(), (k * k - 0.5f) * 0.6.dp.toPx()))
                 }
             }
-            InkButton("Undo glass", 36.dp, 2, onUndo, Modifier.offset(x = 64.dp), enabled = glasses > 0, filled = true) { undoArrow(it) }
+            InkButton("Undo glass", 36.dp, 2, onUndo, Modifier.offset(x = 68.dp), enabled = glasses > 0, filled = true) { undoArrow(it) }
         }
-        Spacer(Modifier.height(6.dp))
-        InkButton("Add a glass", 50.dp, 3, onAdd) { _ ->
+        InkButton("Add a glass", 48.dp, 3, onAdd) { _ ->
             val r = size.minDimension * 0.22f
             sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(r, r * 0.06f)), 63, Ink.Water)
             sketchStroke(listOf(center + Offset(0f, -r), center + Offset(r * 0.05f, r)), 64, Ink.Water)
         }
-        Spacer(Modifier.height(3.dp))
+        Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
             SketchFlame(lit = state.streak > 0, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(3.dp))
