@@ -19,6 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.BasicSwipeToDismissBox
 import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
 import androidx.wear.compose.material.Text
+import com.example.waterreminder.ui.screens.AgeScreen
+import com.example.waterreminder.ui.screens.AllSetScreen
+import com.example.waterreminder.ui.screens.GenderScreen
+import com.example.waterreminder.ui.screens.GoalPicker
+import com.example.waterreminder.ui.screens.HoursPicker
 
 @Composable
 fun HydrateApp(vm: HydrateViewModel) {
@@ -41,11 +46,11 @@ fun HydrateApp(vm: HydrateViewModel) {
 private fun Body(vm: HydrateViewModel, screen: Screen) {
     val home = { vm.go(Screen.Home) }
     when (screen) {
-        Screen.Age -> PlaceholderScreen("Age ${vm.draft.age}", listOf("Next" to { vm.go(Screen.Gender) }))
-        Screen.Gender -> PlaceholderScreen("Gender ${vm.draft.gender}", listOf("Next" to { vm.go(Screen.Goal) }))
-        Screen.Goal -> PlaceholderScreen("Goal ${vm.draft.goalGlasses}", listOf("Next" to { vm.go(Screen.Hours) }))
-        Screen.Hours -> PlaceholderScreen("Hours", listOf("Finish" to { vm.finishOnboarding() }))
-        Screen.AllSet -> PlaceholderScreen("AllSet", listOf("Home" to home))
+        Screen.Age -> AgeScreen(vm.draft, { vm.draft = it }) { vm.go(Screen.Gender) }
+        Screen.Gender -> GenderScreen { vm.draft = vm.draft.copy(gender = it); vm.go(Screen.Goal) }
+        Screen.Goal -> GoalPicker(vm.draft, { vm.draft = it }) { vm.go(Screen.Hours) }
+        Screen.Hours -> HoursPicker(vm.draft, { vm.draft = it }) { vm.go(Screen.AllSet) }
+        Screen.AllSet -> AllSetScreen(vm::finishOnboarding, home)
         Screen.Home -> PlaceholderScreen(
             "Home",
             listOf(
