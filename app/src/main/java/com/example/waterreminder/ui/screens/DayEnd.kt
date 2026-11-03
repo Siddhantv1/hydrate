@@ -32,13 +32,13 @@ fun AllDoneScreen(onDone: () -> Unit) {
 }
 
 @Composable
-private fun DayEnd(title: String, lit: Boolean, count: Int, onOk: () -> Unit) {
+private fun DayEnd(title: String, lit: Boolean, count: Int, onOk: () -> Unit, titleSize: Int = 20) {
     Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-        Text(title, Modifier.padding(horizontal = 30.dp), style = display(20.sp), textAlign = TextAlign.Center)
-        SketchFlame(lit, Modifier.size(44.dp))
+        Text(title, Modifier.padding(horizontal = 34.dp), style = display(titleSize.sp), textAlign = TextAlign.Center)
+        SketchFlame(lit, Modifier.size(36.dp))
         Text("$count", style = display(40.sp).let { if (lit) it else it.copy(color = Ink.Muted) })
         Spacer(Modifier.height(4.dp))
-        InkButton("Done", 40.dp, 5, onOk) { checkGlyph(it) }
+        InkButton("Done", 36.dp, 5, onOk) { checkGlyph(it) }
     }
 }
 
@@ -48,4 +48,4 @@ fun StreakUpScreen(streak: Int, onOk: () -> Unit) = DayEnd("Goals met", true, st
 
 /** Sketch 8. */
 @Composable
-fun StreakLostScreen(onOk: () -> Unit) = DayEnd("You didn't meet your goals", false, 0, onOk)
+fun StreakLostScreen(onOk: () -> Unit) = DayEnd("You didn't meet your goals", false, 0, onOk, titleSize = 15)
