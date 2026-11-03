@@ -78,14 +78,19 @@ private val timeFormat = DateTimeFormatter.ofPattern("h:mm a")
 private fun Modifier.bezel(target: () -> PickerState): Modifier {
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
-    val aim = remember { intArrayOf(0) }
+    // Target index accumulates across a burst: re-aimed from the selection only when no bezel scroll is
+    // pending or the target picker changed, so N ticks move N options even before the first animation starts.
+    var aim by remember { mutableIntStateOf(0) }
+    var aimed by remember { mutableStateOf<PickerState?>(null) }
+    var job by remember { mutableStateOf<Job?>(null) }
     LaunchedEffect(Unit) { focus.requestFocus() }
     return onRotaryScrollEvent { e ->
         val s = target()
-        if (!s.isScrollInProgress) aim[0] = s.selectedOption
-        aim[0] = (aim[0] + if (e.verticalScrollPixels > 0) 1 else -1).coerceIn(0, s.numberOfOptions - 1)
-        val to = aim[0]
-        scope.launch { s.animateScrollToOption(to) }
+        if (job?.isActive != true || aimed !== s) aim = s.selectedOption
+        aimed = s
+        aim = (aim + if (e.verticalScrollPixels > 0) 1 else -1).coerceIn(0, s.numberOfOptions - 1)
+        val to = aim
+        job = scope.launch { s.animateScrollToOption(to) }
         true
     }.focusRequester(focus).focusable()
 }
@@ -104,7 +109,8 @@ private fun InkPicker(
 ) {
     val scope = rememberCoroutineScope()
     Box(modifier.height(row * 3), contentAlignment = Alignment.Center) {
-        Canvas(Modifier.fillMaxWidth().height(row + 4.dp)) {
+        // Box sits inside its own row so the stroke never touches the neighbours.
+        Canvas(Modifier.fillMaxWidth().height(row - 2.dp)) {
             sketchStroke(listOf(Offset.Zero, Offset(size.width, 0f), Offset(size.width, size.height), Offset(0f, size.height)), description.length + 60, box, closed = true)
         }
         Picker(
@@ -190,7 +196,9 @@ private fun suggested(d: Draft) = suggestedGoalGlasses(d.age, d.gender, d.unit).
 fun GoalPicker(draft: Draft, onChange: (Draft) -> Unit, onConfirm: () -> Unit) {
     val d by rememberUpdatedState(draft)
     val change by rememberUpdatedState(onChange)
-    val state = rememberPickerState(MAX_GOAL - MIN_GOAL + 1, draft.goalGlasses.coerceIn(MIN_GOAL, MAX_GOAL) - MIN_GOAL, repeatItems = false)
+    // Initial index is frozen: rememberPickerState keys on it, so a live draft value would recreate the
+    // state (and kill its scroll animation) on every sync.
+    val state = rememberPickerState(MAX_GOAL - MIN_GOAL + 1, remember { draft.goalGlasses.coerceIn(MIN_GOAL, MAX_GOAL) - MIN_GOAL }, repeatItems = false)
     val scope = rememberCoroutineScope()
     // Picker -> draft is the only continuous sync; outside goal changes move the picker explicitly.
     fun setGoal(nd: Draft) {
@@ -215,18 +223,17 @@ fun GoalPicker(draft: Draft, onChange: (Draft) -> Unit, onConfirm: () -> Unit) {
                 )
             }
         }
-        InkPicker(state, { formatGlasses(it + MIN_GOAL, draft.unit) }, "Goal", Modifier.width(128.dp), display(20.sp), 26.dp)
+        InkPicker(state, { formatGlasses(it + MIN_GOAL, draft.unit) }, "Goal", Modifier.width(128.dp), display(20.sp), 28.dp)
         Row(
             Modifier.clickable(role = Role.Checkbox, interactionSource = null, indication = null) {
                 if (d.autoGoal) change(d.copy(autoGoal = false)) else setGoal(d.copy(autoGoal = true, goalGlasses = suggested(d)))
-            }.padding(vertical = 3.dp),
+            }.padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Tick(draft.autoGoal, Modifier.size(18.dp))
             Spacer(Modifier.width(6.dp))
             Text("Set goal automatically", style = body(13.sp))
         }
-        Spacer(Modifier.height(4.dp))
         SketchPill("Confirm", onConfirm)
     }
 }
@@ -237,8 +244,8 @@ private fun clock(minute: Int): String = LocalTime.of(minute / 60, minute % 60).
 fun HoursPicker(draft: Draft, onChange: (Draft) -> Unit, onConfirm: () -> Unit) {
     val d by rememberUpdatedState(draft)
     val change by rememberUpdatedState(onChange)
-    val start = rememberPickerState(96, (draft.startMinute / 15).coerceIn(0, 95), repeatItems = false)
-    val end = rememberPickerState(96, (draft.endMinute / 15).coerceIn(0, 95), repeatItems = false)
+    val start = rememberPickerState(96, remember { (draft.startMinute / 15).coerceIn(0, 95) }, repeatItems = false)
+    val end = rememberPickerState(96, remember { (draft.endMinute / 15).coerceIn(0, 95) }, repeatItems = false)
     var active by remember { mutableIntStateOf(0) }
     val from = start.selectedOption * 15
     val to = end.selectedOption * 15

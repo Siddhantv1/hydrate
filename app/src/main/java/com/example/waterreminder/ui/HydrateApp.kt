@@ -23,7 +23,9 @@ import com.example.waterreminder.ui.screens.AgeScreen
 import com.example.waterreminder.ui.screens.AllSetScreen
 import com.example.waterreminder.ui.screens.GenderScreen
 import com.example.waterreminder.ui.screens.GoalPicker
+import com.example.waterreminder.ui.screens.HomeScreen
 import com.example.waterreminder.ui.screens.HoursPicker
+import com.example.waterreminder.ui.screens.MenuScreen
 
 @Composable
 fun HydrateApp(vm: HydrateViewModel) {
@@ -51,22 +53,14 @@ private fun Body(vm: HydrateViewModel, screen: Screen) {
         Screen.Goal -> GoalPicker(vm.draft, { vm.draft = it }) { vm.go(Screen.Hours) }
         Screen.Hours -> HoursPicker(vm.draft, { vm.draft = it }) { vm.go(Screen.AllSet) }
         Screen.AllSet -> AllSetScreen(vm::finishOnboarding, home)
-        Screen.Home -> PlaceholderScreen(
-            "Home",
-            listOf(
-                "+ glass" to { vm.addGlass() }, "undo" to { vm.undoGlass() },
-                "menu" to { vm.go(Screen.Menu) }, "drink up" to { vm.go(Screen.DrinkUp) },
-            ),
-        )
-        Screen.Menu -> PlaceholderScreen(
-            "Menu",
-            listOf(
-                "edit goal" to { vm.go(Screen.EditGoal) }, "reset timer" to { vm.resetTimer() },
-                "ignore today" to { vm.ignoreToday() },
-            ),
-        )
-        Screen.EditGoal -> PlaceholderScreen("EditGoal", listOf("save" to { vm.saveGoal() }))
-        Screen.EditHours -> PlaceholderScreen("EditHours", listOf("save" to { vm.saveHours() }))
+        Screen.Home -> {
+            val state by vm.state.collectAsState()
+            val log by vm.lastLog.collectAsState()
+            state?.let { HomeScreen(it, log, vm::addGlass, vm::undoGlass) { vm.go(Screen.Menu) } }
+        }
+        Screen.Menu -> MenuScreen({ vm.go(Screen.EditGoal) }, vm::resetTimer, vm::ignoreToday)
+        Screen.EditGoal -> GoalPicker(vm.draft, { vm.draft = it }, vm::saveGoal)
+        Screen.EditHours -> HoursPicker(vm.draft, { vm.draft = it }, vm::saveHours)
         Screen.DrinkUp -> PlaceholderScreen("DrinkUp", listOf("drank" to { vm.drank() }, "skip" to { vm.skip() }))
         Screen.HellYeah -> PlaceholderScreen("HellYeah", listOf("Home" to home))
         Screen.SkipNote -> PlaceholderScreen("SkipNote", listOf("Home" to home))
