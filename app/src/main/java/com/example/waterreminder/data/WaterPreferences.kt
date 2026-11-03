@@ -129,7 +129,10 @@ class WaterPreferences(private val context: Context) {
         return if (ids.size <= MAX_HANDLED_ACTION_IDS) {
             ids
         } else {
-            ids.takeLast(MAX_HANDLED_ACTION_IDS).toSet()
+            // IDs are "<date>-<elapsedRealtime>"; set order isn't guaranteed, so keep the newest.
+            ids.sortedBy { it.substringAfterLast('-').toLongOrNull() ?: 0L }
+                .takeLast(MAX_HANDLED_ACTION_IDS)
+                .toSet()
         }
     }
 

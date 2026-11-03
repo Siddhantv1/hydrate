@@ -186,7 +186,7 @@ private fun GoalScreen(
                 )
             }
             item {
-                FullWidthButton("Save") { onSave(goalDraft, drinkDraft) }
+                FullWidthButton("Save", onClick = { onSave(goalDraft, drinkDraft) })
             }
             item {
                 FullWidthButton("Back", onBack)
@@ -248,9 +248,11 @@ private fun ReminderWindowScreen(
                 }
             }
             item {
-                FullWidthButton("Save", enabled = isValid) {
-                    onSave(startDraft, endDraft)
-                }
+                FullWidthButton(
+                    "Save",
+                    onClick = { onSave(startDraft, endDraft) },
+                    enabled = isValid
+                )
             }
             item {
                 FullWidthButton("Back", onBack)
@@ -342,8 +344,8 @@ private fun StepButton(label: String, onClick: () -> Unit) {
 @Composable
 private fun FullWidthButton(
     label: String,
-    enabled: Boolean = true,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    enabled: Boolean = true
 ) {
     Chip(
         onClick = onClick,
