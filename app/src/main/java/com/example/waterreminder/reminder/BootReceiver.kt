@@ -3,6 +3,9 @@ package com.example.waterreminder.reminder
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import com.example.waterreminder.data.HydrateStore
+import com.example.waterreminder.domain.planNext
+import java.time.ZonedDateTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -16,7 +19,8 @@ class BootReceiver : BroadcastReceiver() {
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                ReminderScheduler.scheduleNextReminder(context)
+                val (_, after) = HydrateStore.get(context).update { planNext(it, ZonedDateTime.now(), null) }
+                ReminderScheduler.arm(context, after)
             } finally {
                 pendingResult.finish()
             }

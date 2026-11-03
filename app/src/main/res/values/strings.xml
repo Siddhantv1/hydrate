@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Water Reminder</string>
+    <string name="app_name">Hydrate</string>
     <string name="notification_channel_name">Water reminders</string>
     <string name="notification_channel_description">Drink-water reminder notifications</string>
 </resources>

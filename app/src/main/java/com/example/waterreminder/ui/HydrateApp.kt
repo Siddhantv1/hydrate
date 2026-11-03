@@ -1,0 +1,81 @@
+package com.example.waterreminder.ui
+
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.wear.compose.foundation.BasicSwipeToDismissBox
+import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
+import androidx.wear.compose.material.Text
+
+@Composable
+fun HydrateApp(vm: HydrateViewModel) {
+    val screen by vm.screen.collectAsState()
+    val activity = LocalActivity.current
+    val current = screen ?: return Box(Modifier.fillMaxSize().background(Color.Black))
+    BackHandler { if (!vm.back()) activity?.finish() }
+    BasicSwipeToDismissBox(
+        onDismissed = { vm.back() },
+        state = rememberSwipeToDismissBoxState(),
+        userSwipeEnabled = current != Screen.DrinkUp && backOf(current) != null,
+    ) { isBackground ->
+        Box(Modifier.fillMaxSize().background(Color.Black)) {
+            if (!isBackground) Body(vm, current)
+        }
+    }
+}
+
+@Composable
+private fun Body(vm: HydrateViewModel, screen: Screen) {
+    val home = { vm.go(Screen.Home) }
+    when (screen) {
+        Screen.Age -> PlaceholderScreen("Age ${vm.draft.age}", listOf("Next" to { vm.go(Screen.Gender) }))
+        Screen.Gender -> PlaceholderScreen("Gender ${vm.draft.gender}", listOf("Next" to { vm.go(Screen.Goal) }))
+        Screen.Goal -> PlaceholderScreen("Goal ${vm.draft.goalGlasses}", listOf("Next" to { vm.go(Screen.Hours) }))
+        Screen.Hours -> PlaceholderScreen("Hours", listOf("Finish" to { vm.finishOnboarding() }))
+        Screen.AllSet -> PlaceholderScreen("AllSet", listOf("Home" to home))
+        Screen.Home -> PlaceholderScreen(
+            "Home",
+            listOf(
+                "+ glass" to { vm.addGlass() }, "undo" to { vm.undoGlass() },
+                "menu" to { vm.go(Screen.Menu) }, "drink up" to { vm.go(Screen.DrinkUp) },
+            ),
+        )
+        Screen.Menu -> PlaceholderScreen(
+            "Menu",
+            listOf(
+                "edit goal" to { vm.go(Screen.EditGoal) }, "reset timer" to { vm.resetTimer() },
+                "ignore today" to { vm.ignoreToday() },
+            ),
+        )
+        Screen.EditGoal -> PlaceholderScreen("EditGoal", listOf("save" to { vm.saveGoal() }))
+        Screen.EditHours -> PlaceholderScreen("EditHours", listOf("save" to { vm.saveHours() }))
+        Screen.DrinkUp -> PlaceholderScreen("DrinkUp", listOf("drank" to { vm.drank() }, "skip" to { vm.skip() }))
+        Screen.HellYeah -> PlaceholderScreen("HellYeah", listOf("Home" to home))
+        Screen.SkipNote -> PlaceholderScreen("SkipNote", listOf("Home" to home))
+        Screen.AllDone -> PlaceholderScreen("AllDone", listOf("Home" to home))
+        Screen.StreakUp -> PlaceholderScreen("StreakUp", listOf("Home" to home))
+        Screen.StreakLost -> PlaceholderScreen("StreakLost", listOf("dismiss" to { vm.dismissMissedGoal() }))
+    }
+}
+
+// Temporary scaffolding; Task 7 deletes it.
+@Composable
+fun PlaceholderScreen(name: String, actions: List<Pair<String, () -> Unit>>) {
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp)) {
+        Text(name)
+        actions.forEach { (label, f) -> Text("> $label", Modifier.clickable { f() }.padding(vertical = 8.dp)) }
+    }
+}
