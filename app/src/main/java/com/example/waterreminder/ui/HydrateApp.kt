@@ -21,11 +21,14 @@ import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
 import androidx.wear.compose.material.Text
 import com.example.waterreminder.ui.screens.AgeScreen
 import com.example.waterreminder.ui.screens.AllSetScreen
+import com.example.waterreminder.ui.screens.DrinkUpScreen
 import com.example.waterreminder.ui.screens.GenderScreen
 import com.example.waterreminder.ui.screens.GoalPicker
+import com.example.waterreminder.ui.screens.HellYeahScreen
 import com.example.waterreminder.ui.screens.HomeScreen
 import com.example.waterreminder.ui.screens.HoursPicker
 import com.example.waterreminder.ui.screens.MenuScreen
+import com.example.waterreminder.ui.screens.SkipNoteScreen
 
 @Composable
 fun HydrateApp(vm: HydrateViewModel) {
@@ -55,15 +58,20 @@ private fun Body(vm: HydrateViewModel, screen: Screen) {
         Screen.AllSet -> AllSetScreen(vm::finishOnboarding, home)
         Screen.Home -> {
             val state by vm.state.collectAsState()
-            val log by vm.lastLog.collectAsState()
-            state?.let { HomeScreen(it, log, vm::addGlass, vm::undoGlass) { vm.go(Screen.Menu) } }
+            state?.let { HomeScreen(it, vm::addGlass, vm::undoGlass) { vm.go(Screen.Menu) } }
         }
         Screen.Menu -> MenuScreen({ vm.go(Screen.EditGoal) }, vm::resetTimer, vm::ignoreToday)
         Screen.EditGoal -> GoalPicker(vm.draft, { vm.draft = it }, vm::saveGoal)
         Screen.EditHours -> HoursPicker(vm.draft, { vm.draft = it }, vm::saveHours)
-        Screen.DrinkUp -> PlaceholderScreen("DrinkUp", listOf("drank" to { vm.drank() }, "skip" to { vm.skip() }))
-        Screen.HellYeah -> PlaceholderScreen("HellYeah", listOf("Home" to home))
-        Screen.SkipNote -> PlaceholderScreen("SkipNote", listOf("Home" to home))
+        Screen.DrinkUp -> {
+            val state by vm.state.collectAsState()
+            state?.let { DrinkUpScreen(it, vm::skip, vm::drank) }
+        }
+        Screen.HellYeah -> {
+            val log by vm.lastLog.collectAsState()
+            log?.let { HellYeahScreen(it, home) }
+        }
+        Screen.SkipNote -> SkipNoteScreen(home)
         Screen.AllDone -> PlaceholderScreen("AllDone", listOf("Home" to home))
         Screen.StreakUp -> PlaceholderScreen("StreakUp", listOf("Home" to home))
         Screen.StreakLost -> PlaceholderScreen("StreakLost", listOf("dismiss" to { vm.dismissMissedGoal() }))

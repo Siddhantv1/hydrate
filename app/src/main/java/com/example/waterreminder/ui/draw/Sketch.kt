@@ -144,7 +144,7 @@ fun SketchBowl(level: Float, modifier: Modifier = Modifier) {
 @Composable
 fun SketchBell(modifier: Modifier = Modifier) {
     val swing = remember { Animatable(0f) }
-    LaunchedEffect(Unit) { swing.animateTo(0f, spring(dampingRatio = 0.3f, stiffness = 200f), initialVelocity = 260f) }
+    LaunchedEffect(Unit) { swing.animateTo(0f, spring(dampingRatio = 0.3f, stiffness = 200f, visibilityThreshold = 0.5f), initialVelocity = 260f) }
     Canvas(
         modifier.graphicsLayer {
             rotationZ = swing.value

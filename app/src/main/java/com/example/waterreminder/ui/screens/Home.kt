@@ -18,7 +18,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -38,7 +37,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 import com.example.waterreminder.domain.HydrateState
-import com.example.waterreminder.ui.Logged
 import com.example.waterreminder.ui.draw.SketchFlame
 import com.example.waterreminder.ui.draw.WaterGlass
 import com.example.waterreminder.ui.draw.ring
@@ -48,10 +46,6 @@ import com.example.waterreminder.ui.theme.Ink
 import com.example.waterreminder.ui.theme.body
 import com.example.waterreminder.ui.theme.display
 import kotlinx.coroutines.launch
-
-/** The last log Home has already shown, so re-entering Home (back from the menu) doesn't replay the rise. */
-// ponytail: process-wide; fine for one activity. Move to the VM if a second screen needs to mark logs as shown.
-private var shownLog: Logged? = null
 
 /** Round hand-drawn button: [filled] paints the disc in ink (the sketch's solid right button). */
 @Composable
@@ -90,14 +84,12 @@ private fun DrawScope.undoArrow(color: Color) {
 }
 
 @Composable
-fun HomeScreen(state: HydrateState, lastLog: Logged?, onAdd: () -> Unit, onUndo: () -> Unit, onMenu: () -> Unit) {
+fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMenu: () -> Unit) {
     val glasses = state.glassesToday
-    // On a fresh entry, rise from the last log's start once; while Home is up, the glass animates by itself.
-    val from = remember { lastLog?.takeIf { it.to == glasses && it !== shownLog }?.from ?: glasses }
-    SideEffect { shownLog = lastLog }
+    // Entering Home never replays a rise (Hell yeah! shows it); while Home is up, + and undo animate the glass.
     Column(Modifier.fillMaxSize().padding(top = 14.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.Center) {
-            WaterGlass(glasses, state.goalGlasses, Modifier.size(96.dp, 114.dp), fromGlasses = from)
+            WaterGlass(glasses, state.goalGlasses, Modifier.size(96.dp, 114.dp))
             InkButton("Menu", 36.dp, 1, onMenu, Modifier.offset(x = (-64).dp)) { ink ->
                 listOf(-1, 0, 1).forEach { k ->
                     drawCircle(ink, 2.2.dp.toPx(), center + Offset(k * 7.dp.toPx(), (k * k - 0.5f) * 0.6.dp.toPx()))

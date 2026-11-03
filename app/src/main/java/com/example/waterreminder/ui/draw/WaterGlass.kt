@@ -39,7 +39,7 @@ internal class SloshState(initial: Float) {
 
 /** Tapered glass from the home-screen sketch, filled to glasses/total, with the count written inside. */
 @Composable
-fun WaterGlass(glasses: Int, total: Int, modifier: Modifier = Modifier, fromGlasses: Int = glasses) {
+fun WaterGlass(glasses: Int, total: Int, modifier: Modifier = Modifier, fromGlasses: Int = glasses, label: String = "$glasses/$total") {
     fun frac(g: Int) = if (total <= 0) 0f else (g.toFloat() / total).coerceIn(0f, 1f)
     val water = remember { SloshState(frac(fromGlasses)) }
     LaunchedEffect(glasses, total) { water.to(frac(glasses)) }
@@ -59,6 +59,6 @@ fun WaterGlass(glasses: Int, total: Int, modifier: Modifier = Modifier, fromGlas
             sketchStroke(listOf(tl, bl, br, tr), 7)
             sketchStroke(ring(Offset((tl.x + tr.x) / 2f, tl.y), (tr.x - tl.x) / 2f, size.height * 0.035f, n = 10), 8, closed = true)
         }
-        Text("$glasses/$total", style = display(22.sp).copy(shadow = Shadow(Color.Black, blurRadius = 10f)))
+        Text(label, style = display(22.sp).copy(shadow = Shadow(Color.Black, blurRadius = 10f)))
     }
 }
