@@ -190,10 +190,14 @@ private fun suggested(d: Draft) = suggestedGoalGlasses(d.age, d.gender, d.unit).
 fun GoalPicker(draft: Draft, onChange: (Draft) -> Unit, onConfirm: () -> Unit) {
     val d by rememberUpdatedState(draft)
     val change by rememberUpdatedState(onChange)
-    val index = draft.goalGlasses.coerceIn(MIN_GOAL, MAX_GOAL) - MIN_GOAL
-    val state = rememberPickerState(MAX_GOAL - MIN_GOAL + 1, index, repeatItems = false)
-    LaunchedEffect(Unit) { if (d.autoGoal && d.goalGlasses != suggested(d)) change(d.copy(goalGlasses = suggested(d))) }
-    LaunchedEffect(index) { if (state.selectedOption != index) state.scrollToOption(index) }
+    val state = rememberPickerState(MAX_GOAL - MIN_GOAL + 1, draft.goalGlasses.coerceIn(MIN_GOAL, MAX_GOAL) - MIN_GOAL, repeatItems = false)
+    val scope = rememberCoroutineScope()
+    // Picker -> draft is the only continuous sync; outside goal changes move the picker explicitly.
+    fun setGoal(nd: Draft) {
+        change(nd)
+        scope.launch { state.scrollToOption(nd.goalGlasses.coerceIn(MIN_GOAL, MAX_GOAL) - MIN_GOAL) }
+    }
+    LaunchedEffect(Unit) { if (d.autoGoal && d.goalGlasses != suggested(d)) setGoal(d.copy(goalGlasses = suggested(d))) }
     // Read in composition: a snapshotFlow on selectedOption stopped emitting after the first change on device.
     val picked = state.selectedOption + MIN_GOAL
     LaunchedEffect(picked) {
@@ -205,7 +209,7 @@ fun GoalPicker(draft: Draft, onChange: (Draft) -> Unit, onConfirm: () -> Unit) {
             VolumeUnit.entries.forEach { u ->
                 SketchPill(
                     text = if (u == VolumeUnit.ML) "ml" else if (u == VolumeUnit.L) "L" else "oz",
-                    onClick = { val nd = d.copy(unit = u); change(if (nd.autoGoal) nd.copy(goalGlasses = suggested(nd)) else nd) },
+                    onClick = { val nd = d.copy(unit = u); if (nd.autoGoal) setGoal(nd.copy(goalGlasses = suggested(nd))) else change(nd) },
                     selected = u == draft.unit,
                     style = display(13.sp),
                 )
@@ -214,7 +218,7 @@ fun GoalPicker(draft: Draft, onChange: (Draft) -> Unit, onConfirm: () -> Unit) {
         InkPicker(state, { formatGlasses(it + MIN_GOAL, draft.unit) }, "Goal", Modifier.width(128.dp), display(20.sp), 26.dp)
         Row(
             Modifier.clickable(role = Role.Checkbox, interactionSource = null, indication = null) {
-                change(if (d.autoGoal) d.copy(autoGoal = false) else d.copy(autoGoal = true, goalGlasses = suggested(d)))
+                if (d.autoGoal) change(d.copy(autoGoal = false)) else setGoal(d.copy(autoGoal = true, goalGlasses = suggested(d)))
             }.padding(vertical = 3.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
