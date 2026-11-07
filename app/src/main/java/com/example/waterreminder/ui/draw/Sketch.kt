@@ -78,7 +78,7 @@ fun DrawScope.sketchPath(points: List<Offset>, seed: Int, closed: Boolean = fals
     penPath(points, seed, if (closed) Pen.FILL else Pen.OPEN)
 
 /** Strokes [points] as one pen line; [closed] shapes are drawn as a pen loop that runs a little past its start. */
-fun DrawScope.sketchStroke(points: List<Offset>, seed: Int, color: Color = Ink.Paper, closed: Boolean = false, width: Dp = 3.dp) {
+fun DrawScope.sketchStroke(points: List<Offset>, seed: Int, color: Color = Ink.Paper, closed: Boolean = false, width: Dp = 2.2.dp) {
     drawPath(
         penPath(points, seed, if (closed) Pen.LOOP else Pen.OPEN), color,
         style = Stroke(width.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
@@ -152,7 +152,7 @@ fun SketchBell(modifier: Modifier = Modifier) {
                 b(190f, 160f), b(191.4f, 143.9f), b(194f, 127.4f), b(199.6f, 112.9f), b(210f, 103f), b(225f, 99.3f),
                 b(240f, 103f), b(250.4f, 112.9f), b(256f, 127.4f), b(258.6f, 143.9f), b(260f, 160f),
             ),
-            31, width = 3.2.dp,
+            31, width = 2.4.dp,
         )
         // Lip: a shallow loop, out along the top, sharp turn at the right, back underneath and a touch past the start.
         sketchStroke(
@@ -179,7 +179,7 @@ fun SketchFlame(lit: Boolean, modifier: Modifier = Modifier) {
             p(0.57f, 0.20f), p(0.60f, 0.31f), p(0.63f, 0.42f), p(0.70f, 0.36f), p(0.77f, 0.28f), p(0.82f, 0.42f),
             p(0.85f, 0.58f), p(0.82f, 0.75f), p(0.70f, 0.88f),
         )
-        val w = if (size.minDimension < 24.dp.toPx()) 2.2.dp else 3.dp
+        val w = if (size.minDimension < 24.dp.toPx()) 1.8.dp else 2.2.dp
         if (lit) {
             drawPath(sketchPath(outline, 41, closed = true), Ink.Ember)
             sketchStroke(outline, 41, Ink.Ember, closed = true, width = w)

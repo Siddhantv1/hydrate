@@ -90,7 +90,7 @@ fun SkipNoteScreen(onOk: () -> Unit) {
 }
 
 /** The hand-drawn ✓ shared by the drank button and the end-of-day buttons. */
-internal fun DrawScope.checkGlyph(color: androidx.compose.ui.graphics.Color, width: Dp = 3.dp) {
+internal fun DrawScope.checkGlyph(color: androidx.compose.ui.graphics.Color, width: Dp = 2.4.dp) {
     val r = size.minDimension * 0.2f
     sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(-r * 0.25f, r * 0.7f), center + Offset(r, -r * 0.65f)), 92, color, width = width)
 }

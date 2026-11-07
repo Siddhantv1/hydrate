@@ -106,9 +106,9 @@ fun WaterGlass(glasses: Int, total: Int, modifier: Modifier = Modifier, fromGlas
         Spacer(Modifier.matchParentSize().graphicsLayer(compositingStrategy = CompositingStrategy.Offscreen).drawWithCache {
             val g = GlassShape(size.width, size.height, density)
             onDrawBehind {
-                sketchStroke(g.leftWall, 7, width = 3.2.dp)
-                sketchStroke(g.rightWall, 9, width = 3.2.dp)
-                sketchStroke(g.base, 10, width = 3.2.dp)
+                sketchStroke(g.leftWall, 7, width = 2.4.dp)
+                sketchStroke(g.rightWall, 9, width = 2.4.dp)
+                sketchStroke(g.base, 10, width = 2.4.dp)
                 sketchStroke(g.rim, 8, closed = true)
             }
         })
