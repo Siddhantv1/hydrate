@@ -25,6 +25,7 @@ import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
@@ -32,9 +33,7 @@ import com.example.waterreminder.domain.Gender
 import com.example.waterreminder.ui.theme.Ink
 import com.example.waterreminder.ui.theme.display
 import kotlin.math.cos
-import kotlin.math.hypot
 import kotlin.math.sin
-import kotlin.random.Random
 
 /** Shared spring for water level, slosh decay and the bowl fill. */
 internal val Slosh = spring<Float>(dampingRatio = 0.55f, stiffness = 120f)
@@ -51,7 +50,7 @@ fun ring(center: Offset, rx: Float, ry: Float = rx, fromDeg: Float = 0f, sweepDe
     }
 }
 
-private data class SketchKey(val points: List<Offset>, val seed: Int, val closed: Boolean, val density: Float)
+private data class SketchKey(val points: List<Offset>, val seed: Int, val pen: Pen, val density: Float)
 
 // Reusing the same Path instance every frame lets the renderer cache its geometry; rebuilding it each
 // frame made every animation frame re-tessellate every outline on screen.
@@ -60,53 +59,29 @@ private val sketchCache = object : LinkedHashMap<SketchKey, Path>(64, 0.75f, tru
     override fun removeEldestEntry(eldest: MutableMap.MutableEntry<SketchKey, Path>?) = size > 128
 }
 
-/**
- * Hand-drawn path through [points]: segments are subdivided every ~10dp, every point is nudged by a
- * seeded random of at most 1.5dp (same seed = same wobble on every frame), then smoothed.
- * Cached: callers must not mutate the returned Path.
- */
-fun DrawScope.sketchPath(points: List<Offset>, seed: Int, closed: Boolean = false): Path =
-    sketchCache.getOrPut(SketchKey(points, seed, closed, density)) { buildSketchPath(points, seed, closed) }
-
-private fun DrawScope.buildSketchPath(points: List<Offset>, seed: Int, closed: Boolean): Path {
-    val step = 10.dp.toPx()
-    val dense = ArrayList<Offset>()
-    val segs = if (closed) points.size else points.size - 1
-    for (i in 0 until segs) {
-        val a = points[i]
-        val b = points[(i + 1) % points.size]
-        val k = (hypot(b.x - a.x, b.y - a.y) / step).toInt().coerceAtLeast(1)
-        for (j in 0 until k) dense += a + (b - a) * (j / k.toFloat())
-    }
-    if (!closed) dense += points.last()
-    val rnd = Random(seed)
-    val j = 1.5.dp.toPx()
-    val q = dense.map { it + Offset((rnd.nextFloat() * 2 - 1) * j, (rnd.nextFloat() * 2 - 1) * j) }
-    fun mid(a: Offset, b: Offset) = (a + b) / 2f
-    return Path().apply {
-        if (closed) {
-            val start = mid(q.last(), q[0])
-            moveTo(start.x, start.y)
-            for (i in q.indices) {
-                val m = mid(q[i], q[(i + 1) % q.size])
-                quadraticTo(q[i].x, q[i].y, m.x, m.y)
-            }
-            close()
-        } else {
-            moveTo(q[0].x, q[0].y)
-            for (i in 1 until q.size - 1) {
-                val m = mid(q[i], q[i + 1])
-                quadraticTo(q[i].x, q[i].y, m.x, m.y)
-            }
-            lineTo(q.last().x, q.last().y)
+private fun DrawScope.penPath(points: List<Offset>, seed: Int, pen: Pen): Path =
+    sketchCache.getOrPut(SketchKey(points, seed, pen, density)) {
+        val c = penCurve(points, seed, pen, density)
+        Path().apply {
+            if (c.size >= 2) moveTo(c[0], c[1])
+            var i = 2
+            while (i + 5 < c.size) { cubicTo(c[i], c[i + 1], c[i + 2], c[i + 3], c[i + 4], c[i + 5]); i += 6 }
+            if (pen == Pen.FILL) close()
         }
     }
-}
 
-fun DrawScope.sketchStroke(points: List<Offset>, seed: Int, color: Color = Ink.Paper, closed: Boolean = false) {
+/**
+ * Hand-drawn path through [points] (see [penCurve]): one smooth pen line, same seed = same shape.
+ * [closed] gives the properly closed outline, for fills and clips. Cached: callers must not mutate it.
+ */
+fun DrawScope.sketchPath(points: List<Offset>, seed: Int, closed: Boolean = false): Path =
+    penPath(points, seed, if (closed) Pen.FILL else Pen.OPEN)
+
+/** Strokes [points] as one pen line; [closed] shapes are drawn as a pen loop that runs a little past its start. */
+fun DrawScope.sketchStroke(points: List<Offset>, seed: Int, color: Color = Ink.Paper, closed: Boolean = false, width: Dp = 3.dp) {
     drawPath(
-        sketchPath(points, seed, closed), color,
-        style = Stroke(2.5.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
+        penPath(points, seed, if (closed) Pen.LOOP else Pen.OPEN), color,
+        style = Stroke(width.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
     )
 }
 
@@ -153,45 +128,63 @@ fun SketchBowl(level: Float, modifier: Modifier = Modifier) {
     }
 }
 
-/** Bell from sketch 4: dome, rim, knob and clapper. Swings once when it first appears. */
+/** Bell from sketch 4: smooth dome, flared lip, ring on top, clapper; faint ringing marks either side. Swings once when it first appears. */
 @Composable
 fun SketchBell(modifier: Modifier = Modifier) {
     val swing = remember { Animatable(0f) }
     LaunchedEffect(Unit) { swing.animateTo(0f, spring(dampingRatio = 0.3f, stiffness = 200f, visibilityThreshold = 0.5f), initialVelocity = 260f) }
+    // Shapes are traced from the 450px mockup (bell centred on x=225, ring top at y=86) and scaled to the canvas.
+    fun DrawScope.b(x: Float, y: Float) = p(0.5f + (x - 225f) * BELL, 0.07f + (y - 86f) * BELL)
     Canvas(
-        modifier.graphicsLayer {
-            rotationZ = swing.value
-            transformOrigin = TransformOrigin(0.5f, 0.08f)
-        }
+        modifier
+            .drawBehind { // outside the rotating layer, so the ringing marks stay put while the bell swings
+                val faint = Ink.Paper.copy(alpha = 0.45f)
+                sketchStroke(listOf(b(168f, 124f), b(164.3f, 132.3f), b(163f, 141f), b(164f, 150f)), 35, faint, width = 2.4.dp)
+                sketchStroke(listOf(b(282f, 124f), b(285.7f, 132.3f), b(287f, 141f), b(286f, 150f)), 36, faint, width = 2.4.dp)
+            }
+            .graphicsLayer {
+                rotationZ = swing.value
+                transformOrigin = TransformOrigin(0.5f, 0.08f)
+            }
     ) {
         sketchStroke(
             listOf(
-                p(0.17f, 0.74f), p(0.24f, 0.64f), p(0.27f, 0.46f), p(0.31f, 0.32f), p(0.40f, 0.22f),
-                p(0.50f, 0.19f), p(0.60f, 0.22f), p(0.69f, 0.32f), p(0.73f, 0.46f), p(0.76f, 0.64f), p(0.83f, 0.74f),
+                b(190f, 160f), b(191.4f, 143.9f), b(194f, 127.4f), b(199.6f, 112.9f), b(210f, 103f), b(225f, 99.3f),
+                b(240f, 103f), b(250.4f, 112.9f), b(256f, 127.4f), b(258.6f, 143.9f), b(260f, 160f),
             ),
-            31,
+            31, width = 3.2.dp,
         )
-        sketchStroke(listOf(p(0.10f, 0.77f), p(0.50f, 0.79f), p(0.90f, 0.76f)), 32)
-        sketchStroke(ring(p(0.5f, 0.12f), size.width * 0.05f, n = 6), 33, closed = true)
-        sketchStroke(ring(p(0.5f, 0.88f), size.width * 0.06f, n = 6), 34, closed = true)
+        // Lip: a shallow loop, out along the top, sharp turn at the right, back underneath and a touch past the start.
+        sketchStroke(
+            listOf(
+                b(178f, 164f), b(201f, 160.5f), b(225f, 159.5f), b(249f, 160.5f), b(272f, 164f),
+                b(249f, 167.5f), b(225f, 168.4f), b(201f, 167.5f), b(175f, 163.2f),
+            ),
+            32,
+        )
+        sketchStroke(ring(b(224.5f, 92f), size.width * 6f * BELL, fromDeg = 150f, n = 8), 33, closed = true, width = 2.4.dp)
+        sketchStroke(listOf(b(218f, 172f), b(220.5f, 176.6f), b(225f, 178.4f), b(229.5f, 176.6f), b(232f, 172f)), 34)
     }
 }
 
-/** Three-tongued flame from sketch 7: filled ember when lit, a faint outline when not. */
+private const val BELL = 0.0094f // canvas fraction per mockup px
+
+/** Three-tongued flame from sketch 7: a smooth teardrop with pointed tips; filled ember when lit, a faint outline when not. */
 @Composable
 fun SketchFlame(lit: Boolean, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val outline = listOf(
-            p(0.50f, 0.93f), p(0.31f, 0.89f), p(0.19f, 0.77f), p(0.16f, 0.60f), p(0.21f, 0.44f),
-            p(0.27f, 0.30f), p(0.34f, 0.44f), p(0.41f, 0.32f), p(0.46f, 0.18f), p(0.51f, 0.06f),
-            p(0.57f, 0.20f), p(0.62f, 0.33f), p(0.68f, 0.45f), p(0.75f, 0.30f), p(0.81f, 0.45f),
-            p(0.85f, 0.61f), p(0.80f, 0.78f), p(0.68f, 0.89f),
+            p(0.50f, 0.94f), p(0.32f, 0.90f), p(0.20f, 0.79f), p(0.15f, 0.64f), p(0.18f, 0.50f), p(0.22f, 0.38f),
+            p(0.27f, 0.27f), p(0.32f, 0.40f), p(0.37f, 0.44f), p(0.41f, 0.27f), p(0.46f, 0.15f), p(0.52f, 0.05f),
+            p(0.57f, 0.20f), p(0.60f, 0.31f), p(0.63f, 0.42f), p(0.70f, 0.36f), p(0.77f, 0.28f), p(0.82f, 0.42f),
+            p(0.85f, 0.58f), p(0.82f, 0.75f), p(0.70f, 0.88f),
         )
+        val w = if (size.minDimension < 24.dp.toPx()) 2.2.dp else 3.dp
         if (lit) {
             drawPath(sketchPath(outline, 41, closed = true), Ink.Ember)
-            sketchStroke(outline, 41, Ink.Ember, closed = true)
+            sketchStroke(outline, 41, Ink.Ember, closed = true, width = w)
         } else {
-            sketchStroke(outline, 41, Ink.Ember.copy(alpha = 0.4f), closed = true)
+            sketchStroke(outline, 41, Ink.Ember.copy(alpha = 0.4f), closed = true, width = w)
         }
     }
 }
@@ -202,11 +195,11 @@ fun GenderGlyph(gender: Gender, modifier: Modifier = Modifier) {
     Canvas(modifier) {
         val r = size.minDimension * 0.24f
         if (gender == Gender.MALE) {
-            sketchStroke(ring(p(0.40f, 0.60f), r, n = 7), 51, closed = true)
+            sketchStroke(ring(p(0.40f, 0.60f), r, fromDeg = 200f, n = 10), 51, closed = true)
             sketchStroke(listOf(p(0.57f, 0.43f), p(0.84f, 0.16f)), 52)
             sketchStroke(listOf(p(0.62f, 0.16f), p(0.84f, 0.16f), p(0.84f, 0.38f)), 53)
         } else {
-            sketchStroke(ring(p(0.50f, 0.36f), r, n = 7), 54, closed = true)
+            sketchStroke(ring(p(0.50f, 0.36f), r, fromDeg = 160f, n = 10), 54, closed = true)
             sketchStroke(listOf(p(0.50f, 0.60f), p(0.50f, 0.94f)), 55)
             sketchStroke(listOf(p(0.32f, 0.78f), p(0.68f, 0.78f)), 56)
         }

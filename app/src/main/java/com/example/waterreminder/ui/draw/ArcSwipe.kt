@@ -122,8 +122,8 @@ fun ArcSwipeButton(side: ArcSide, color: Color, label: String, onTrigger: () -> 
                 .drawBehind {
                     val disc = DISC.toPx() / 2f
                     drawCircle(Ink.Bg, disc)
-                    drawCircle(color.copy(alpha = 0.16f), disc)
-                    sketchStroke(ring(center, disc - 2.dp.toPx(), fromDeg = side.start, n = 9), 84 + side.ordinal, color, closed = true)
+                    drawCircle(color.copy(alpha = 0.16f), disc - 2.dp.toPx()) // tint stays inside the loop
+                    sketchStroke(ring(center, disc - 2.dp.toPx(), fromDeg = 165f, n = 10), 84 + side.ordinal, color, closed = true)
                     glyph()
                 },
         )

@@ -170,7 +170,7 @@ fun GenderScreen(onPick: (Gender) -> Unit) {
                             .semantics { contentDescription = name }
                             .clickable(role = Role.Button, interactionSource = null, indication = null) { onPick(g) }
                             .drawBehind {
-                                sketchStroke(ring(center, size.minDimension / 2f - 3.dp.toPx(), fromDeg = -110f, sweepDeg = 385f, n = 20), 70 + g.ordinal)
+                                sketchStroke(ring(center, size.minDimension / 2f - 3.dp.toPx(), fromDeg = 165f, n = 14), 70 + g.ordinal, closed = true)
                             },
                         contentAlignment = Alignment.Center,
                     ) { GenderGlyph(g, Modifier.size(42.dp)) }
@@ -183,10 +183,10 @@ fun GenderScreen(onPick: (Gender) -> Unit) {
 
 @Composable
 private fun Tick(checked: Boolean, modifier: Modifier) = Canvas(modifier) {
-    sketchStroke(ring(center, size.minDimension / 2f - 2.dp.toPx(), n = 7), 80, if (checked) Ink.Paper else Ink.Muted, closed = true)
+    sketchStroke(ring(center, size.minDimension / 2f - 2.dp.toPx(), fromDeg = 160f, n = 9), 80, if (checked) Ink.Paper else Ink.Muted, closed = true, width = 2.4.dp)
     if (checked) sketchStroke(
         listOf(Offset(size.width * 0.26f, size.height * 0.52f), Offset(size.width * 0.44f, size.height * 0.72f), Offset(size.width * 0.80f, size.height * 0.24f)),
-        81, Ink.Water,
+        81, Ink.Water, width = 2.6.dp,
     )
 }
 

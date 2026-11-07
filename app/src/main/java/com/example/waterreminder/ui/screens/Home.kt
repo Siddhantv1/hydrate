@@ -68,7 +68,8 @@ internal fun InkButton(
         contentAlignment = Alignment.Center,
     ) {
         Box(Modifier.size(size).drawBehind {
-                val pts = ring(center, this.size.minDimension / 2f - 2.dp.toPx(), fromDeg = -100f + seed * 7, n = 9)
+                // Pen loop starting just below 9 o'clock, like the mockup's buttons.
+                val pts = ring(center, this.size.minDimension / 2f - 2.dp.toPx(), fromDeg = 160f + seed * 4, n = 10)
                 if (filled && enabled) drawPath(sketchPath(pts, seed, closed = true), ink)
                 sketchStroke(pts, seed, ink, closed = true)
                 glyph(if (filled && enabled) Ink.Bg else ink)
@@ -76,14 +77,15 @@ internal fun InkButton(
     }
 }
 
-/** Undo arrow (the usual undo icon): a chevron pointing left on top, its shaft hooking round on the right and back. */
+/**
+ * Undo arrow (the usual undo icon): a chevron pointing left on top, its shaft hooking round on the right and back.
+ * Traced from the mockup, where the button is centred on (360, 152) with a 33px loop radius.
+ */
 private fun DrawScope.undoArrow(color: Color) {
-    val r = size.minDimension * 0.3f
-    fun q(x: Float, y: Float) = center + Offset((x + 0.12f) * r, (y + 0.08f) * r)
-    val tip = q(-0.85f, -0.35f)
-    sketchStroke(listOf(q(-0.4f, -0.8f), tip, q(-0.4f, 0.1f)), 61, color)
-    val hookC = q(0.15f, 0.1f)
-    sketchStroke(listOf(tip) + ring(hookC, 0.45f * r, fromDeg = -90f, sweepDeg = 180f, n = 5) + q(-0.3f, 0.55f), 62, color)
+    val u = (size.minDimension / 2f - 2.dp.toPx()) / 33f
+    fun q(x: Float, y: Float) = center + Offset((x - 360f) * u, (y - 152f) * u)
+    sketchStroke(listOf(q(371f, 168f), q(378.3f, 160.2f), q(380.4f, 150.5f), q(377f, 141.6f), q(368f, 136f), q(355.9f, 135f), q(343f, 137f)), 62, color, width = 3.4.dp)
+    sketchStroke(listOf(q(352f, 127f), q(342f, 137f), q(353f, 147f)), 61, color, width = 3.4.dp)
 }
 
 @Composable
@@ -103,8 +105,8 @@ fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMen
         }
         InkButton("Add a glass", 48.dp, 3, onAdd) { _ ->
             val r = size.minDimension * 0.22f
-            sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(r, r * 0.06f)), 63, Ink.Water)
-            sketchStroke(listOf(center + Offset(0f, -r), center + Offset(r * 0.05f, r)), 64, Ink.Water)
+            sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(r, r * 0.06f)), 63, Ink.Water, width = 3.6.dp)
+            sketchStroke(listOf(center + Offset(0f, -r), center + Offset(r * 0.05f, r)), 64, Ink.Water, width = 3.6.dp)
         }
         Spacer(Modifier.height(2.dp))
         Row(verticalAlignment = Alignment.CenterVertically) {
