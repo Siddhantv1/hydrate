@@ -14,9 +14,13 @@ A personal Wear OS water reminder (Kotlin, Jetpack Compose for Wear OS), drawn t
 
 A phone may also be connected to ADB, so always target the watch by serial (`adb devices -l` lists it).
 
+Install the **release** build on the watch: the debug build is interpreted and noticeably choppy (4 s cold start vs under 1 s). The release build is signed with the debug key, so it installs over a debug build and keeps your data.
+
 ```powershell
-.\gradlew.bat :app:testDebugUnitTest :app:assembleDebug
-adb -s <watch-serial> install -r app\build\outputs\apk\debug\app-debug.apk
+.\gradlew.bat :app:testDebugUnitTest :app:assembleRelease
+adb -s <watch-serial> install -r app\build\outputs\apk\release\app-release.apk
+# Optional: compile now instead of waiting for the watch's idle-time compile (uses the bundled startup profile)
+adb -s <watch-serial> shell cmd package compile -m speed-profile -f com.example.waterreminder
 ```
 
 ## Battery (Samsung)

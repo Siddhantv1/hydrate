@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
@@ -44,7 +45,8 @@ fun WaterGlass(glasses: Int, total: Int, modifier: Modifier = Modifier, fromGlas
     val water = remember { SloshState(frac(fromGlasses)) }
     LaunchedEffect(glasses, total) { water.to(frac(glasses)) }
     Box(modifier, contentAlignment = Alignment.Center) {
-        Canvas(Modifier.matchParentSize()) {
+        // Own layer: the slosh redraws ~70 frames per glass; keep that from re-recording the rest of the screen.
+        Canvas(Modifier.matchParentSize().graphicsLayer()) {
             val tl = p(0.16f, 0.06f); val bl = p(0.29f, 0.94f); val br = p(0.71f, 0.94f); val tr = p(0.84f, 0.06f)
             val i = 2.dp.toPx()
             val inside = Path().apply {

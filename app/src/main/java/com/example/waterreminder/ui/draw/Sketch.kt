@@ -51,11 +51,24 @@ fun ring(center: Offset, rx: Float, ry: Float = rx, fromDeg: Float = 0f, sweepDe
     }
 }
 
+private data class SketchKey(val points: List<Offset>, val seed: Int, val closed: Boolean, val density: Float)
+
+// Reusing the same Path instance every frame lets the renderer cache its geometry; rebuilding it each
+// frame made every animation frame re-tessellate every outline on screen.
+// ponytail: unbounded-by-design small LRU (128 shapes); main-thread only, which is where drawing happens.
+private val sketchCache = object : LinkedHashMap<SketchKey, Path>(64, 0.75f, true) {
+    override fun removeEldestEntry(eldest: MutableMap.MutableEntry<SketchKey, Path>?) = size > 128
+}
+
 /**
  * Hand-drawn path through [points]: segments are subdivided every ~10dp, every point is nudged by a
  * seeded random of at most 1.5dp (same seed = same wobble on every frame), then smoothed.
+ * Cached: callers must not mutate the returned Path.
  */
-fun DrawScope.sketchPath(points: List<Offset>, seed: Int, closed: Boolean = false): Path {
+fun DrawScope.sketchPath(points: List<Offset>, seed: Int, closed: Boolean = false): Path =
+    sketchCache.getOrPut(SketchKey(points, seed, closed, density)) { buildSketchPath(points, seed, closed) }
+
+private fun DrawScope.buildSketchPath(points: List<Offset>, seed: Int, closed: Boolean): Path {
     val step = 10.dp.toPx()
     val dense = ArrayList<Offset>()
     val segs = if (closed) points.size else points.size - 1
