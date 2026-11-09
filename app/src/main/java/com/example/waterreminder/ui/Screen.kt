@@ -4,7 +4,12 @@ import com.example.waterreminder.domain.Gender
 import com.example.waterreminder.domain.HydrateState
 import com.example.waterreminder.domain.VolumeUnit
 
-enum class Screen { Age, Gender, Goal, Hours, AllSet, Home, Menu, EditGoal, EditHours, DrinkUp, HellYeah, SkipNote, AllDone, StreakUp, StreakLost }
+enum class Screen {
+    Age, Gender, Goal, Hours, AllSet, Home, Menu, EditGoal, EditHours,
+    ResetHours, // "Reset timer" in the menu: pick the reminder hours again; saving restarts the schedule from now
+    Notice,     // short confirmation (e.g. the new next-reminder time), then Home
+    DrinkUp, HellYeah, SkipNote, AllDone, StreakUp, StreakLost,
+}
 
 fun startScreen(s: HydrateState): Screen = when {
     !s.onboarded -> Screen.Age
@@ -15,7 +20,7 @@ fun startScreen(s: HydrateState): Screen = when {
 
 /** Screens that keep their place when the app resumes: in-progress input must not be lost. */
 fun keepsPlaceOnResume(screen: Screen): Boolean = when (screen) {
-    Screen.Age, Screen.Gender, Screen.Goal, Screen.Hours, Screen.AllSet, Screen.EditGoal, Screen.EditHours -> true
+    Screen.Age, Screen.Gender, Screen.Goal, Screen.Hours, Screen.AllSet, Screen.EditGoal, Screen.EditHours, Screen.ResetHours -> true
     else -> false
 }
 
@@ -27,6 +32,7 @@ fun backOf(screen: Screen): Screen? = when (screen) {
     Screen.Menu -> Screen.Home
     Screen.EditGoal -> Screen.Menu
     Screen.EditHours -> Screen.EditGoal
+    Screen.ResetHours -> Screen.Menu
     Screen.DrinkUp -> Screen.Home
     else -> null
 }

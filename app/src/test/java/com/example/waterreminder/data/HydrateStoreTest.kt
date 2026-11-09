@@ -43,7 +43,7 @@ class HydrateStoreTest {
         val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
         val ds = dataStore(scope)
         val full = HydrateState(true, 31, Gender.FEMALE, VolumeUnit.OZ, false, 11, 420, 1260, 4, "2026-11-03",
-            6, "2026-11-02", "2026-11-03", 1793700000000L, true, true, true, "2026-10-30")
+            6, "2026-11-02", "2026-11-03", 1793700000000L, true, true, true, "2026-10-30", 1793690000000L)
         HydrateStore(ds, { clockOn(3) }).update { full }
         assertEquals(full, HydrateStore(ds, { clockOn(3) }).state.first())
         scope.cancel()

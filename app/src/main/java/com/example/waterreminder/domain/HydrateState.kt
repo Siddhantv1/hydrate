@@ -23,4 +23,5 @@ data class HydrateState(
     val doubleNext: Boolean = false,
     val showMissedGoal: Boolean = false,
     val firstDate: String = "",      // onboarding day; never counts as missed
+    val lastReminderAt: Long = 0L,   // epoch millis of the last reminder actually shown, 0 = none yet
 )

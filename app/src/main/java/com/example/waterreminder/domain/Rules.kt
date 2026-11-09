@@ -92,10 +92,46 @@ fun skip(s: HydrateState, now: ZonedDateTime): HydrateState =
     planNext(s.copy(doubleNext = true, outstanding = false), now, now)
 
 fun reminderFired(s: HydrateState, now: ZonedDateTime): HydrateState =
-    if (canRemind(s, now)) planNext(s.copy(doubleNext = s.doubleNext || s.outstanding, outstanding = true), now, now)
+    if (canRemind(s, now)) planNext(
+        s.copy(doubleNext = s.doubleNext || s.outstanding, outstanding = true, lastReminderAt = now.toInstant().toEpochMilli()),
+        now, now,
+    )
     else planNext(s, now, null)
 
-fun resetTimer(s: HydrateState, now: ZonedDateTime): HydrateState = planNext(s, now, now)
+private val Clock12 = java.time.format.DateTimeFormatter.ofPattern("h:mm a", Locale.ENGLISH)
+
+/** "8:00 AM", "tomorrow 8:00 AM", "yesterday 9:00 PM" or "Nov 5, 8:00 AM", relative to [now]'s day. */
+private fun relativeTime(millis: Long, now: ZonedDateTime): String {
+    val t = java.time.Instant.ofEpochMilli(millis).atZone(now.zone)
+    val time = t.format(Clock12)
+    return when (t.toLocalDate()) {
+        now.toLocalDate() -> time
+        now.toLocalDate().plusDays(1) -> "tomorrow $time"
+        now.toLocalDate().minusDays(1) -> "yesterday $time"
+        else -> t.format(java.time.format.DateTimeFormatter.ofPattern("MMM d, ", Locale.ENGLISH)) + time
+    }
+}
+
+fun nextReminderLabel(s: HydrateState, now: ZonedDateTime): String {
+    if (s.nextReminderAt == 0L) return "No reminder scheduled"
+    val at = relativeTime(s.nextReminderAt, now)
+    return when {
+        s.ignoredDate == now.toLocalDate().toString() -> "Paused today · next $at"
+        goalMet(s) -> "Goal met · next $at"
+        else -> "Next reminder $at"
+    }
+}
+
+/** Short form for the narrow bottom of the home screen: "Next 10:45 PM" today, "Next Wed 8:00 AM" otherwise. */
+fun nextReminderShort(s: HydrateState, now: ZonedDateTime): String {
+    if (s.nextReminderAt == 0L) return "No reminder set"
+    val t = java.time.Instant.ofEpochMilli(s.nextReminderAt).atZone(now.zone)
+    val day = if (t.toLocalDate() == now.toLocalDate()) "" else t.format(java.time.format.DateTimeFormatter.ofPattern("EEE ", Locale.ENGLISH))
+    return "Next $day${t.format(Clock12)}"
+}
+
+fun lastReminderLabel(s: HydrateState, now: ZonedDateTime): String =
+    if (s.lastReminderAt == 0L) "No reminder yet" else "Last reminder ${relativeTime(s.lastReminderAt, now)}"
 
 fun ignoreToday(s: HydrateState, now: ZonedDateTime): HydrateState =
     planNext(s.copy(ignoredDate = now.toLocalDate().toString(), outstanding = false), now, null)

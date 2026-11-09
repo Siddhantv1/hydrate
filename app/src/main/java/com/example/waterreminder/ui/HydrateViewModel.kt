@@ -23,9 +23,11 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
     private val _state = MutableStateFlow<HydrateState?>(null)
     private val _screen = MutableStateFlow<Screen?>(null)
     private val _lastLog = MutableStateFlow<Logged?>(null)
+    private val _notice = MutableStateFlow("")
     val state: StateFlow<HydrateState?> = _state.asStateFlow()
     val screen: StateFlow<Screen?> = _screen.asStateFlow()
     val lastLog: StateFlow<Logged?> = _lastLog.asStateFlow()
+    val notice: StateFlow<String> = _notice.asStateFlow()
 
     var draft by mutableStateOf(
         Draft(25, Gender.MALE, VolumeUnit.ML, true, suggestedGoalGlasses(25, Gender.MALE, VolumeUnit.ML), 480, 1320)
@@ -40,7 +42,7 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun go(to: Screen) {
-        if (to == Screen.EditGoal || to == Screen.EditHours) _state.value?.let(::seedDraft)
+        if (to == Screen.EditGoal || to == Screen.EditHours || to == Screen.ResetHours) _state.value?.let(::seedDraft)
         _screen.value = to
     }
 
@@ -114,17 +116,16 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun resetTimer() {
-        viewModelScope.launch {
-            apply { s, now -> resetTimer(s, now) }
-            _screen.value = Screen.Home
-        }
+    /** Show what the schedule is now, so a menu action is never silent. */
+    private fun confirm(after: HydrateState) {
+        _notice.value = nextReminderLabel(after, ZonedDateTime.now())
+        _screen.value = Screen.Notice
     }
 
     fun ignoreToday() {
         viewModelScope.launch {
-            apply(true) { s, now -> ignoreToday(s, now) }
-            _screen.value = Screen.Home
+            val (_, a) = apply(true) { s, now -> ignoreToday(s, now) }
+            confirm(a)
         }
     }
 
@@ -139,8 +140,8 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
     fun saveHours() {
         viewModelScope.launch {
             val d = draft
-            apply { s, now -> saveHours(s, d.startMinute, d.endMinute, now) }
-            _screen.value = Screen.Home
+            val (_, a) = apply { s, now -> saveHours(s, d.startMinute, d.endMinute, now) }
+            confirm(a)
         }
     }
 

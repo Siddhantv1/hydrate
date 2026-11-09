@@ -22,6 +22,7 @@ import com.example.waterreminder.ui.screens.HellYeahScreen
 import com.example.waterreminder.ui.screens.HomeScreen
 import com.example.waterreminder.ui.screens.HoursPicker
 import com.example.waterreminder.ui.screens.MenuScreen
+import com.example.waterreminder.ui.screens.NoticeScreen
 import com.example.waterreminder.ui.screens.SkipNoteScreen
 import com.example.waterreminder.ui.screens.StreakLostScreen
 import com.example.waterreminder.ui.screens.StreakUpScreen
@@ -56,9 +57,16 @@ private fun Body(vm: HydrateViewModel, screen: Screen) {
             val state by vm.state.collectAsState()
             state?.let { HomeScreen(it, vm::addGlass, vm::undoGlass) { vm.go(Screen.Menu) } }
         }
-        Screen.Menu -> MenuScreen({ vm.go(Screen.EditGoal) }, vm::resetTimer, vm::ignoreToday)
+        Screen.Menu -> {
+            val state by vm.state.collectAsState()
+            MenuScreen(state, { vm.go(Screen.EditGoal) }, { vm.go(Screen.ResetHours) }, vm::ignoreToday)
+        }
         Screen.EditGoal -> GoalPicker(vm.draft, { vm.draft = it }, vm::saveGoal)
-        Screen.EditHours -> HoursPicker(vm.draft, { vm.draft = it }, vm::saveHours)
+        Screen.EditHours, Screen.ResetHours -> HoursPicker(vm.draft, { vm.draft = it }, vm::saveHours)
+        Screen.Notice -> {
+            val text by vm.notice.collectAsState()
+            NoticeScreen(text, home)
+        }
         Screen.DrinkUp -> {
             val state by vm.state.collectAsState()
             state?.let { DrinkUpScreen(it, vm::skip, vm::drank) }

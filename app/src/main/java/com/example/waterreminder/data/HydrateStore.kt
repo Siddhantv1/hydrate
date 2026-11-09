@@ -43,6 +43,7 @@ class HydrateStore(
         val doubleNext = booleanPreferencesKey("doubleNext")
         val showMissedGoal = booleanPreferencesKey("showMissedGoal")
         val firstDate = stringPreferencesKey("firstDate")
+        val lastReminderAt = longPreferencesKey("lastReminderAt")
     }
 
     private fun read(p: Preferences): HydrateState {
@@ -66,6 +67,7 @@ class HydrateStore(
             doubleNext = p[K.doubleNext] ?: d.doubleNext,
             showMissedGoal = p[K.showMissedGoal] ?: d.showMissedGoal,
             firstDate = p[K.firstDate] ?: d.firstDate,
+            lastReminderAt = p[K.lastReminderAt] ?: d.lastReminderAt,
         )
     }
 
@@ -88,6 +90,7 @@ class HydrateStore(
         p[K.doubleNext] = s.doubleNext
         p[K.showMissedGoal] = s.showMissedGoal
         p[K.firstDate] = s.firstDate
+        p[K.lastReminderAt] = s.lastReminderAt
     }
 
     /** Persisted state passed through rollover(today); does not write. */

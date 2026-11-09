@@ -16,6 +16,33 @@ class RulesTest {
     // 8:00–22:00 = 840 min / 8 glasses = 105 min interval
     private val base = HydrateState(onboarded = true, goalGlasses = 8, startMinute = 480, endMinute = 1320, date = "2026-11-03")
 
+    @Test fun firedReminderRecordsTime() {
+        assertEquals(ms(12, 0), reminderFired(base.copy(glassesToday = 2), at(12, 0)).lastReminderAt)
+        assertEquals(0L, reminderFired(base.copy(glassesToday = 8), at(12, 0)).lastReminderAt) // goal met: no reminder shown
+    }
+
+    @Test fun nextReminderLabels() {
+        assertEquals("Next reminder 10:45 AM", nextReminderLabel(base.copy(nextReminderAt = ms(10, 45)), at(9, 0)))
+        assertEquals("Next reminder tomorrow 8:00 AM", nextReminderLabel(base.copy(nextReminderAt = ms(8, 0, day = 4)), at(21, 0)))
+        assertEquals("Goal met · next tomorrow 8:00 AM",
+            nextReminderLabel(base.copy(glassesToday = 8, nextReminderAt = ms(8, 0, day = 4)), at(12, 0)))
+        assertEquals("Paused today · next tomorrow 8:00 AM",
+            nextReminderLabel(base.copy(ignoredDate = "2026-11-03", nextReminderAt = ms(8, 0, day = 4)), at(12, 0)))
+        assertEquals("No reminder scheduled", nextReminderLabel(base, at(12, 0)))
+    }
+
+    @Test fun nextReminderShortLabels() {
+        assertEquals("Next 10:45 AM", nextReminderShort(base.copy(nextReminderAt = ms(10, 45)), at(9, 0)))
+        assertEquals("Next Wed 8:00 AM", nextReminderShort(base.copy(nextReminderAt = ms(8, 0, day = 4)), at(21, 0)))
+        assertEquals("No reminder set", nextReminderShort(base, at(9, 0)))
+    }
+
+    @Test fun lastReminderLabels() {
+        assertEquals("No reminder yet", lastReminderLabel(base, at(9, 0)))
+        assertEquals("Last reminder 6:15 AM", lastReminderLabel(base.copy(lastReminderAt = ms(6, 15)), at(9, 0)))
+        assertEquals("Last reminder yesterday 9:00 PM", lastReminderLabel(base.copy(lastReminderAt = ms(21, 0, day = 2)), at(9, 0)))
+    }
+
     @Test fun suggestedGoal() {
         assertEquals(10, suggestedGoalGlasses(25, Gender.MALE, VolumeUnit.ML))   // 2500 ml
         assertEquals(8, suggestedGoalGlasses(25, Gender.FEMALE, VolumeUnit.ML))  // 2000 ml

@@ -37,6 +37,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 import com.example.waterreminder.domain.HydrateState
+import com.example.waterreminder.domain.lastReminderLabel
+import com.example.waterreminder.domain.nextReminderLabel
+import com.example.waterreminder.domain.nextReminderShort
+import java.time.ZonedDateTime
+import kotlinx.coroutines.delay
+import androidx.compose.ui.text.style.TextAlign
 import com.example.waterreminder.ui.draw.SketchFlame
 import com.example.waterreminder.ui.draw.WaterGlass
 import com.example.waterreminder.ui.draw.ring
@@ -94,8 +100,8 @@ fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMen
     // Entering Home never replays a rise (Hell yeah! shows it); while Home is up, + and undo animate the glass.
     Column(Modifier.fillMaxSize().padding(top = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Box(contentAlignment = Alignment.Center) {
-            // The drawn glass is 68% of the box: ~87dp, ~41% of the 212dp screen. A taller box pushes the streak row off the bottom.
-            WaterGlass(glasses, state.goalGlasses, Modifier.size(128.dp, 132.dp))
+            // The drawn glass is 68% of the box. A taller box pushes the next-reminder and streak rows off the bottom.
+            WaterGlass(glasses, state.goalGlasses, Modifier.size(120.dp, 122.dp))
             InkButton("Menu", 36.dp, 1, onMenu, Modifier.offset(x = (-68).dp)) { ink ->
                 listOf(-1, 0, 1).forEach { k ->
                     drawCircle(ink, 2.2.dp.toPx(), center + Offset(k * 7.dp.toPx(), (k * k - 0.5f) * 0.6.dp.toPx()))
@@ -108,7 +114,7 @@ fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMen
             sketchStroke(listOf(center + Offset(-r, 0f), center + Offset(r, r * 0.06f)), 63, Ink.Water, width = 3.6.dp)
             sketchStroke(listOf(center + Offset(0f, -r), center + Offset(r * 0.05f, r)), 64, Ink.Water, width = 3.6.dp)
         }
-        Spacer(Modifier.height(2.dp))
+        Text(nextReminderShort(state, ZonedDateTime.now()), style = body(12.sp).copy(color = Ink.Muted))
         Row(verticalAlignment = Alignment.CenterVertically) {
             SketchFlame(lit = state.streak > 0, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(3.dp))
@@ -118,7 +124,7 @@ fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMen
 }
 
 @Composable
-fun MenuScreen(onChangeGoal: () -> Unit, onResetTimer: () -> Unit, onIgnoreToday: () -> Unit) {
+fun MenuScreen(state: HydrateState?, onChangeGoal: () -> Unit, onResetTimer: () -> Unit, onIgnoreToday: () -> Unit) {
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
@@ -134,6 +140,13 @@ fun MenuScreen(onChangeGoal: () -> Unit, onResetTimer: () -> Unit, onIgnoreToday
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
+            // The schedule, in words: proof that reminders are set and that they actually fire.
+            state?.let {
+                val now = ZonedDateTime.now()
+                Text(nextReminderLabel(it, now), style = body(12.sp).copy(color = Ink.Water), textAlign = TextAlign.Center)
+                Text(lastReminderLabel(it, now), style = body(12.sp).copy(color = Ink.Muted), textAlign = TextAlign.Center)
+                Spacer(Modifier.height(4.dp))
+            }
             listOf("Change goal" to onChangeGoal, "Reset timer" to onResetTimer, "Ignore for today" to onIgnoreToday)
                 .forEachIndexed { i, (label, action) ->
                     if (i > 0) Box(
@@ -149,5 +162,17 @@ fun MenuScreen(onChangeGoal: () -> Unit, onResetTimer: () -> Unit, onIgnoreToday
                     )
                 }
         }
+    }
+}
+
+/** Confirms a menu action with the schedule it produced, then returns home. Tap to dismiss early. */
+@Composable
+fun NoticeScreen(text: String, onDone: () -> Unit) {
+    LaunchedEffect(Unit) { delay(2500); onDone() }
+    Box(
+        Modifier.fillMaxSize().clickable(interactionSource = null, indication = null, onClick = onDone).padding(horizontal = 30.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(text, style = display(20.sp), textAlign = TextAlign.Center)
     }
 }
