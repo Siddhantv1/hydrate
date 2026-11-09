@@ -54,8 +54,8 @@ fun rollover(s: HydrateState, today: LocalDate): HydrateState {
 fun settleGoal(s: HydrateState, today: LocalDate): HydrateState {
     val d = today.toString()
     return when {
-        goalMet(s) && s.goalMetDate != d -> s.copy(streak = s.streak + 1, goalMetDate = d)
-        !goalMet(s) && s.goalMetDate == d -> s.copy(streak = (s.streak - 1).coerceAtLeast(0), goalMetDate = "")
+        goalMet(s) && s.goalMetDate != d -> s.copy(streak = s.streak + 1, goalMetDate = d, metDays = keepRecent(s.metDays + d, today))
+        !goalMet(s) && s.goalMetDate == d -> s.copy(streak = (s.streak - 1).coerceAtLeast(0), goalMetDate = "", metDays = s.metDays - d)
         else -> s
     }
 }

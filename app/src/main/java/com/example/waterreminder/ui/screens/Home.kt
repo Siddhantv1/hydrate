@@ -101,7 +101,7 @@ private fun DrawScope.undoArrow(color: Color) {
 }
 
 @Composable
-fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMenu: () -> Unit) {
+fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onStreak: () -> Unit, onMenu: () -> Unit) {
     val glasses = state.glassesToday
     // Entering Home never replays a rise (Hell yeah! shows it); while Home is up, + and undo animate the glass.
     Column(Modifier.fillMaxSize().padding(top = 6.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -121,7 +121,12 @@ fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMen
             sketchStroke(listOf(center + Offset(0f, -r), center + Offset(r * 0.05f, r)), 64, Ink.Water, width = 3.6.dp)
         }
         Text(nextReminderShort(state, ZonedDateTime.now()), style = body(12.sp).copy(color = Ink.Muted))
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.semantics { contentDescription = "Streak ${state.streak} days. Open calendar" }
+                .clickable(role = Role.Button, interactionSource = null, indication = null, onClick = onStreak)
+                .padding(horizontal = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
             SketchFlame(lit = state.streak > 0, modifier = Modifier.size(15.dp))
             Spacer(Modifier.width(3.dp))
             Text("${state.streak}", style = body(13.sp).copy(color = if (state.streak > 0) Ink.Ember else Ink.Muted))

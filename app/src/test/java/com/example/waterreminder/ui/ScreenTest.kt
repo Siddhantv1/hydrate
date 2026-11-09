@@ -18,11 +18,12 @@ class ScreenTest {
         assertEquals(Screen.Age, backOf(Screen.Gender))
         assertEquals(null, backOf(Screen.Home))
         assertEquals(Screen.Menu, backOf(Screen.ResetHours))
+        assertEquals(Screen.Home, backOf(Screen.Calendar))
     }
     @Test fun resumeKeepsPlaceOnlyInInput() {
         listOf(Screen.Age, Screen.Gender, Screen.Goal, Screen.Hours, Screen.AllSet, Screen.EditGoal, Screen.EditHours, Screen.ResetHours)
             .forEach { assertEquals(it.name, true, keepsPlaceOnResume(it)) }
-        listOf(Screen.Home, Screen.Menu, Screen.DrinkUp, Screen.HellYeah, Screen.SkipNote, Screen.AllDone, Screen.StreakUp, Screen.StreakLost, Screen.Notice)
+        listOf(Screen.Home, Screen.Menu, Screen.DrinkUp, Screen.HellYeah, Screen.SkipNote, Screen.AllDone, Screen.StreakUp, Screen.StreakLost, Screen.Notice, Screen.Calendar)
             .forEach { assertEquals(it.name, false, keepsPlaceOnResume(it)) }
     }
 }
