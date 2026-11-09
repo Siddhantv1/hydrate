@@ -1,51 +1,35 @@
-# Water Reminder Wear OS
+# Hydrate
 
-Native Wear OS water reminder app written in Kotlin with Jetpack Compose for Wear OS.
+A personal Wear OS water reminder (Kotlin, Jetpack Compose for Wear OS), drawn to look like the owner's notebook sketch. Built for a Galaxy Watch 4 (Wear OS, API 33).
 
 ## What it does
 
-- Stores a daily goal, current-day intake, default drink amount, reminder window, and last tracked date in DataStore.
-- Resets intake when the app or reminder pipeline observes a new local date.
-- Schedules one upcoming reminder at a time with AlarmManager.
-- Shows wearable notifications with `Drank` and `Skip` actions.
-- Adds the default drink amount only once per notification action ID, which prevents duplicate action handling.
-- Stops reminders for the rest of the day when the goal is reached, then schedules the next reminder window for the following day.
+1. First launch: notification permission, age, gender, daily goal (suggested from age and gender, or set by hand), active hours.
+2. Home: a hand-drawn glass that fills toward the goal (`3/8`); **+** logs a glass, the right button undoes one, **⋯** opens Change goal / Reset timer / Ignore for today.
+3. Through the active hours one exact alarm at a time fires "Drink up!": drag ✓ up the edge for "Hell yeah!", or − to skip, which makes the next reminder two glasses.
+4. An unanswered reminder counts as a skip; any interaction restarts the interval.
+5. Meeting the goal shows "All done!" and grows the streak; a missed day resets it, which the app shows the next time it opens. Reminders resume at tomorrow's start.
 
-## Scheduling approach
+## Build and install (CLI)
 
-This app uses `AlarmManager.setAndAllowWhileIdle()` instead of WorkManager. WorkManager periodic work is deferrable and has a minimum repeat interval, while water reminders are user-visible time-window notifications. The scheduler still avoids exact alarms, uses one-shot inexact alarms, and enforces a minimum 15-minute interval to be friendlier to Wear OS battery life.
+A phone may also be connected to ADB, so always target the watch by serial (`adb devices -l` lists it).
 
-Reminder interval:
+Install the **release** build on the watch: the debug build is interpreted and noticeably choppy (4 s cold start vs under 1 s). The release build is signed with the debug key, so it installs over a debug build and keeps your data.
 
-```text
-planned reminders = ceil(dailyGoalMl / defaultDrinkAmountMl)
-interval = max(15 minutes, activeWindowMinutes / planned reminders)
+```powershell
+.\gradlew.bat :app:testDebugUnitTest :app:assembleRelease
+adb -s <watch-serial> install -r app\build\outputs\apk\release\app-release.apk
+# Optional: compile now instead of waiting for the watch's idle-time compile (uses the bundled startup profile)
+adb -s <watch-serial> shell cmd package compile -m speed-profile -f com.example.waterreminder
 ```
 
-For a 2000 ml goal, 250 ml drink amount, and 8:00 AM to 10:00 PM window, the app plans 8 reminders across the allowed window.
+## Battery (Samsung)
 
-## Build and run
+- Settings > Apps > Hydrate > Battery: set battery use to **Unrestricted**, otherwise Samsung's freezer can hold back reminders.
+- In the same app settings, turn off **Pause app activity if unused**.
+- Turn off **Wireless debugging** on the watch when you're not developing; it keeps the radio up and drains the battery.
 
-1. Open this folder in Android Studio.
-2. Install a Wear OS emulator or connect a Wear OS device.
-3. Make sure Android SDK 36 is installed.
-4. Sync Gradle.
-5. Run the `app` configuration on the watch target.
+## Docs
 
-From a machine with Gradle installed, you can also run:
-
-```bash
-gradle :app:assembleDebug
-```
-
-The current environment did not have Gradle or an Android SDK installed, so a Gradle wrapper was not generated here.
-
-## Important files
-
-- `MainActivity` requests notification permission and hosts Compose UI.
-- `WaterReminderViewModel` coordinates UI state, persistence, and rescheduling.
-- `WaterPreferences` owns DataStore keys and daily reset/action de-duplication.
-- `ReminderScheduler` calculates the next allowed reminder time.
-- `ReminderNotificationReceiver` posts reminders only inside the configured time window.
-- `DrinkActionReceiver` handles `Drank` and `Skip`.
-- `BootReceiver` reschedules after boot, time, timezone, or package replacement events.
+- Design spec: `docs/superpowers/specs/2026-11-03-hydrate-ui-design.md` (the owner's sketch is next to it: `2026-11-03-hydrate-sketch.jpg`).
+- Implementation plan: `docs/superpowers/plans/2026-11-03-hydrate-ui.md`.

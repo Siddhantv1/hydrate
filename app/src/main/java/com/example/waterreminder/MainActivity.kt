@@ -1,42 +1,48 @@
 package com.example.waterreminder
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.lifecycleScope
-import com.example.waterreminder.reminder.ReminderScheduler
-import com.example.waterreminder.reminder.WaterNotification
-import com.example.waterreminder.ui.WaterReminderApp
-import com.example.waterreminder.ui.theme.WaterReminderTheme
-import kotlinx.coroutines.launch
+import com.example.waterreminder.reminder.ReminderNotification
+import com.example.waterreminder.ui.HydrateApp
+import com.example.waterreminder.ui.HydrateViewModel
+import com.example.waterreminder.ui.theme.HydrateTheme
 
 class MainActivity : ComponentActivity() {
+    private val vm: HydrateViewModel by viewModels()
+
     private val notificationPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) {
-            lifecycleScope.launch {
-                ReminderScheduler.scheduleNextReminder(applicationContext)
-            }
-        }
-    }
+    ) { }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        WaterNotification.ensureChannel(this)
+        ReminderNotification.ensureChannel(this)
         requestNotificationPermissionIfNeeded()
 
         setContent {
-            WaterReminderTheme {
-                WaterReminderApp()
+            HydrateTheme {
+                HydrateApp(vm)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        vm.onForeground(false)
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        vm.onForeground(true)
     }
 
     private fun requestNotificationPermissionIfNeeded() {
