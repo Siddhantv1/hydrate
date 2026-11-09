@@ -136,6 +136,11 @@ fun lastReminderLabel(s: HydrateState, now: ZonedDateTime): String =
 fun ignoreToday(s: HydrateState, now: ZonedDateTime): HydrateState =
     planNext(s.copy(ignoredDate = now.toLocalDate().toString(), outstanding = false), now, null)
 
+fun isPausedToday(s: HydrateState, now: ZonedDateTime): Boolean = s.ignoredDate == now.toLocalDate().toString()
+
+/** Undo "Ignore for today": reminders restart one interval from now. */
+fun resumeToday(s: HydrateState, now: ZonedDateTime): HydrateState = planNext(s.copy(ignoredDate = ""), now, now)
+
 fun completeOnboarding(
     s: HydrateState, age: Int, gender: Gender, unit: VolumeUnit, autoGoal: Boolean,
     goalGlasses: Int, startMinute: Int, endMinute: Int, now: ZonedDateTime,

@@ -37,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 import com.example.waterreminder.domain.HydrateState
+import com.example.waterreminder.domain.isPausedToday
 import com.example.waterreminder.domain.lastReminderLabel
 import com.example.waterreminder.domain.nextReminderLabel
 import com.example.waterreminder.domain.nextReminderShort
@@ -124,7 +125,8 @@ fun HomeScreen(state: HydrateState, onAdd: () -> Unit, onUndo: () -> Unit, onMen
 }
 
 @Composable
-fun MenuScreen(state: HydrateState?, onChangeGoal: () -> Unit, onResetTimer: () -> Unit, onIgnoreToday: () -> Unit) {
+fun MenuScreen(state: HydrateState?, onChangeGoal: () -> Unit, onResetTimer: () -> Unit, onIgnoreToday: () -> Unit, onResume: () -> Unit) {
+    val paused = state != null && isPausedToday(state, ZonedDateTime.now())
     val scroll = rememberScrollState()
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
@@ -147,7 +149,7 @@ fun MenuScreen(state: HydrateState?, onChangeGoal: () -> Unit, onResetTimer: () 
                 Text(lastReminderLabel(it, now), style = body(12.sp).copy(color = Ink.Muted), textAlign = TextAlign.Center)
                 Spacer(Modifier.height(4.dp))
             }
-            listOf("Change goal" to onChangeGoal, "Reset timer" to onResetTimer, "Ignore for today" to onIgnoreToday)
+            listOf("Change goal" to onChangeGoal, "Reset timer" to onResetTimer, if (paused) "Resume reminders" to onResume else "Ignore for today" to onIgnoreToday)
                 .forEachIndexed { i, (label, action) ->
                     if (i > 0) Box(
                         Modifier.size(118.dp, 6.dp).drawBehind {

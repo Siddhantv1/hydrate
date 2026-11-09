@@ -16,6 +16,15 @@ class RulesTest {
     // 8:00–22:00 = 840 min / 8 glasses = 105 min interval
     private val base = HydrateState(onboarded = true, goalGlasses = 8, startMinute = 480, endMinute = 1320, date = "2026-11-03")
 
+    @Test fun resumeUndoesIgnoreToday() {
+        val paused = ignoreToday(base, at(12, 0))
+        assertTrue(isPausedToday(paused, at(12, 30)))
+        val resumed = resumeToday(paused, at(12, 30))
+        assertFalse(isPausedToday(resumed, at(12, 30)))
+        assertEquals(ms(14, 15), resumed.nextReminderAt) // 12:30 + 105 min
+        assertTrue(canRemind(resumed, at(14, 15)))
+    }
+
     @Test fun firedReminderRecordsTime() {
         assertEquals(ms(12, 0), reminderFired(base.copy(glassesToday = 2), at(12, 0)).lastReminderAt)
         assertEquals(0L, reminderFired(base.copy(glassesToday = 8), at(12, 0)).lastReminderAt) // goal met: no reminder shown

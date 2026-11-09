@@ -59,7 +59,7 @@ private fun Body(vm: HydrateViewModel, screen: Screen) {
         }
         Screen.Menu -> {
             val state by vm.state.collectAsState()
-            MenuScreen(state, { vm.go(Screen.EditGoal) }, { vm.go(Screen.ResetHours) }, vm::ignoreToday)
+            MenuScreen(state, { vm.go(Screen.EditGoal) }, { vm.go(Screen.ResetHours) }, vm::ignoreToday, vm::resumeToday)
         }
         Screen.EditGoal -> GoalPicker(vm.draft, { vm.draft = it }, vm::saveGoal)
         Screen.EditHours, Screen.ResetHours -> HoursPicker(vm.draft, { vm.draft = it }, vm::saveHours)

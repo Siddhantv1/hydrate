@@ -129,6 +129,13 @@ class HydrateViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun resumeToday() {
+        viewModelScope.launch {
+            val (_, a) = apply { s, now -> resumeToday(s, now) }
+            confirm(a)
+        }
+    }
+
     fun saveGoal() {
         viewModelScope.launch {
             val d = draft
