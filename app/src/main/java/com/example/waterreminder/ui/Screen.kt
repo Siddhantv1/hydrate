@@ -8,6 +8,7 @@ enum class Screen {
     Age, Gender, Goal, Hours, AllSet, Home, Menu, EditGoal, EditHours,
     ResetHours, // "Reset timer" in the menu: pick the reminder hours again; saving restarts the schedule from now
     Notice,     // short confirmation (e.g. the new next-reminder time), then Home
+    Calendar,   // streak calendar, opened by tapping the streak on Home
     DrinkUp, HellYeah, SkipNote, AllDone, StreakUp, StreakLost,
 }
 
@@ -33,6 +34,7 @@ fun backOf(screen: Screen): Screen? = when (screen) {
     Screen.EditGoal -> Screen.Menu
     Screen.EditHours -> Screen.EditGoal
     Screen.ResetHours -> Screen.Menu
+    Screen.Calendar -> Screen.Home
     Screen.DrinkUp -> Screen.Home
     else -> null
 }

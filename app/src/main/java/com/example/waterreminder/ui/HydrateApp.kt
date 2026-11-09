@@ -15,6 +15,7 @@ import androidx.wear.compose.foundation.rememberSwipeToDismissBoxState
 import com.example.waterreminder.ui.screens.AgeScreen
 import com.example.waterreminder.ui.screens.AllDoneScreen
 import com.example.waterreminder.ui.screens.AllSetScreen
+import com.example.waterreminder.ui.screens.CalendarScreen
 import com.example.waterreminder.ui.screens.DrinkUpScreen
 import com.example.waterreminder.ui.screens.GenderScreen
 import com.example.waterreminder.ui.screens.GoalPicker
@@ -55,7 +56,11 @@ private fun Body(vm: HydrateViewModel, screen: Screen) {
         Screen.AllSet -> AllSetScreen(vm::finishOnboarding, home)
         Screen.Home -> {
             val state by vm.state.collectAsState()
-            state?.let { HomeScreen(it, vm::addGlass, vm::undoGlass) { vm.go(Screen.Menu) } }
+            state?.let { HomeScreen(it, vm::addGlass, vm::undoGlass, onStreak = { vm.go(Screen.Calendar) }) { vm.go(Screen.Menu) } }
+        }
+        Screen.Calendar -> {
+            val state by vm.state.collectAsState()
+            state?.let { CalendarScreen(it) }
         }
         Screen.Menu -> {
             val state by vm.state.collectAsState()

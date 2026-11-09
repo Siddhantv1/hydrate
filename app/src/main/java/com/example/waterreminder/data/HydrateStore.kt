@@ -8,11 +8,13 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.waterreminder.domain.Gender
 import com.example.waterreminder.domain.HydrateState
 import com.example.waterreminder.domain.VolumeUnit
 import com.example.waterreminder.domain.rollover
+import com.example.waterreminder.domain.withBackfilledMetDays
 import java.time.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
@@ -44,6 +46,7 @@ class HydrateStore(
         val showMissedGoal = booleanPreferencesKey("showMissedGoal")
         val firstDate = stringPreferencesKey("firstDate")
         val lastReminderAt = longPreferencesKey("lastReminderAt")
+        val metDays = stringSetPreferencesKey("metDays")
     }
 
     private fun read(p: Preferences): HydrateState {
@@ -68,6 +71,7 @@ class HydrateStore(
             showMissedGoal = p[K.showMissedGoal] ?: d.showMissedGoal,
             firstDate = p[K.firstDate] ?: d.firstDate,
             lastReminderAt = p[K.lastReminderAt] ?: d.lastReminderAt,
+            metDays = p[K.metDays] ?: d.metDays,
         )
     }
 
@@ -91,17 +95,23 @@ class HydrateStore(
         p[K.showMissedGoal] = s.showMissedGoal
         p[K.firstDate] = s.firstDate
         p[K.lastReminderAt] = s.lastReminderAt
+        p[K.metDays] = s.metDays
     }
 
     /** Persisted state passed through rollover(today); does not write. */
-    val state: Flow<HydrateState> =
-        dataStore.data.map { rollover(read(it), LocalDate.now(clock())) }
+    val state: Flow<HydrateState> = dataStore.data.map(::load)
+
+    /** Backfill met days first (it needs the streak before rollover can reset it), then roll over to today. */
+    private fun load(p: Preferences): HydrateState {
+        val today = LocalDate.now(clock())
+        return rollover(withBackfilledMetDays(read(p), today), today)
+    }
 
     /** Returns (rolledBefore, after); persists `after` atomically. */
     suspend fun update(transform: (HydrateState) -> HydrateState): Pair<HydrateState, HydrateState> {
         var result: Pair<HydrateState, HydrateState>? = null
         dataStore.edit { p ->
-            val before = rollover(read(p), LocalDate.now(clock()))
+            val before = load(p)
             val after = transform(before)
             write(p, after)
             result = before to after

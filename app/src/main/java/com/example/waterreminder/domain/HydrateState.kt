@@ -24,4 +24,5 @@ data class HydrateState(
     val showMissedGoal: Boolean = false,
     val firstDate: String = "",      // onboarding day; never counts as missed
     val lastReminderAt: Long = 0L,   // epoch millis of the last reminder actually shown, 0 = none yet
+    val metDays: Set<String> = emptySet(), // ISO dates on which the goal was met (for the streak calendar)
 )
