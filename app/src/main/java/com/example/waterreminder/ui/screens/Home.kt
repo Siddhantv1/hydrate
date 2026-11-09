@@ -37,6 +37,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.wear.compose.material.Text
 import com.example.waterreminder.domain.HydrateState
+import androidx.wear.compose.foundation.CurvedDirection
+import androidx.wear.compose.foundation.CurvedLayout
+import androidx.wear.compose.foundation.CurvedTextStyle
+import androidx.wear.compose.material.curvedText
+import com.example.waterreminder.ui.theme.Bricolage
 import com.example.waterreminder.domain.isPausedToday
 import com.example.waterreminder.domain.lastReminderLabel
 import com.example.waterreminder.domain.nextReminderLabel
@@ -137,18 +142,21 @@ fun MenuScreen(state: HydrateState?, onChangeGoal: () -> Unit, onResetTimer: () 
             .focusRequester(focus).focusable(),
         contentAlignment = Alignment.Center,
     ) {
+        // The schedule, curved along the rim: next reminder on top, and (once one has fired) the last one at the bottom.
+        state?.let {
+            val now = ZonedDateTime.now()
+            CurvedLayout(Modifier.fillMaxSize()) {
+                curvedText(nextReminderLabel(it, now), style = CurvedTextStyle(fontSize = 12.sp, fontFamily = Bricolage, color = Ink.Water))
+            }
+            if (it.lastReminderAt != 0L) CurvedLayout(Modifier.fillMaxSize(), anchor = 90f, angularDirection = CurvedDirection.Angular.Reversed) {
+                curvedText(lastReminderLabel(it, now), style = CurvedTextStyle(fontSize = 12.sp, fontFamily = Bricolage, color = Ink.Muted))
+            }
+        }
         Column(
             Modifier.verticalScroll(scroll).padding(vertical = 24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            // The schedule, in words: proof that reminders are set and that they actually fire.
-            state?.let {
-                val now = ZonedDateTime.now()
-                Text(nextReminderLabel(it, now), style = body(12.sp).copy(color = Ink.Water), textAlign = TextAlign.Center)
-                Text(lastReminderLabel(it, now), style = body(12.sp).copy(color = Ink.Muted), textAlign = TextAlign.Center)
-                Spacer(Modifier.height(4.dp))
-            }
             listOf("Change goal" to onChangeGoal, "Reset timer" to onResetTimer, if (paused) "Resume reminders" to onResume else "Ignore for today" to onIgnoreToday)
                 .forEachIndexed { i, (label, action) ->
                     if (i > 0) Box(
